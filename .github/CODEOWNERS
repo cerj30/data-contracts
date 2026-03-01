@@ -1,8 +1,8 @@
-/tym1-digi/                @bank-data-contracts/tým-digi
-/tym2-Data-Governance/     @bank-data-contracts/tým-DataGov
-/tym3-obsluha-klienta/     @bank-data-contracts/tým-obsluha-klienta
-/tym4-steering-data/       @bank-data-contracts/tým-DataGov
-/tym5-Risk-ESG/            @bank-data-contracts/tým-esg-risk
-/tym6-strategie/           @bank-data-contracts/tým-strategie
-/tym7-gen-ai/              @bank-data-contracts/tým-icm-genai
-/tym8-investment-banking/  @bank-data-contracts/tým-investment-banking
+/team1-digi/               @bank-data-contracts/team1-digi
+/team2-Data-Governance/    @bank-data-contracts/team2-DataGov
+/team3-client-service/     @bank-data-contracts/team3-client-service
+/team4-steering-data/      @bank-data-contracts/team4-steering-data
+/team5-esg-risk/           @bank-data-contracts/team5-esg-risk
+/team6-strategy/           @bank-data-contracts/team6-strategy
+/team7-gen-ai/             @bank-data-contracts/team7-icm-genai
+/team8-investment-banking/ @bank-data-contracts/team8-investment-banking
