@@ -1,1 +1,0 @@
-# tým ESG & Risk
