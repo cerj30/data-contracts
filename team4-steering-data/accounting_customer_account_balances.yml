@@ -1,0 +1,146 @@
+# ============================================================
+# DATA CONTRACT - ACCOUNTING CUSTOMER ACCOUNT BALANCES
+# ============================================================
+dataContractSpecification: 1.1.0
+
+# Unikátní identifikátor data produktu
+id: urn:businessdomain:nova-banka:retail-corporate:accounting-customer-account-balances
+
+info:
+  title: DP_ACCOUNTING_CUSTOMER_ACCOUNT_BALANCES          # Název data produktu (velká písmena)
+  name: Accounting Customer Account Balances              # Čitelný název
+  maturity_score: 60%                                     # Vyspělost produktu (0-100%)
+  version: 1.0.0                                          # Verze ve formátu major.minor.patch
+  status: in development                                  # Možnosti: draft / in development / active / deprecated
+
+  description: |
+    Data produkt poskytuje standardizovaný pohled na všechny klientské účty a úvěry bez ohledu na to, v jakém core systému vznikly.
+    Zamezuje nutnosti ostatních oddělení dolovat data napřímo ze zdrojových transakčních systémů.
+    Konzumenti: Steering data, Risk, CRM týmy.
+    Data latency: T + 1 (denní EOD zůstatky).
+
+    Záznamy jsou na úrovni detailu: 1 řádek = 1 finanční produkt klienta a jeho aktuální zůstatek.
+
+    Filter Rules:
+    * Pouze záznamy s platným business_date
+    * Zahrnuje pouze aktivní/platné finanční produkty z core systémů
+
+    Use Cases:
+    * UC1 - Podklad pro datovou rekonciliaci (porovnání s daty z hlavní knihy).
+    * UC2 - Scoring klientů a řízení rizik (Risk).
+    * UC3 - Cílení marketingových kampaní (CRM týmy).
+
+  owner: Nova Banka \ Klientská data \ Retail a Corporate
+  contact:
+    name: Josef Kuník
+    email: josef.kunik@nova-banka.cz
+
+# ============================================================
+# SERVERY - kde jsou data fyzicky uložena
+# ============================================================
+servers:
+  PRODUCTION:
+    type: databricks                        # Typ databáze
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: retail-prod
+    table: dp_accounting_customer_account_balances
+
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: retail-dev
+    table: dp_accounting_customer_account_balances
+
+# ============================================================
+# SCHEMA - struktura dat (tabulky a sloupce)
+# ============================================================
+schema:
+  - name: dp_accounting_customer_account_balances
+    description: Denní zůstatky (EOD) klientských účtů a finančních produktů
+    fields:
+
+      - name: record_id
+        type: string
+        description: Unikátní identifikátor záznamu (UUID)
+        required: true
+        unique: true
+        example: "987e6543-e21b-34d3-b456-426614174111"
+
+      - name: business_date
+        type: date
+        description: Datum záznamu ve formátu YYYY-MM-DD (End of Day)
+        required: true
+        example: "2024-01-31"
+
+      - name: customer_id
+        type: string
+        description: Unikátní identifikátor klienta
+        required: true
+        example: "CUST-889911"
+
+      - name: financial_product_id
+        type: string
+        description: Unikátní identifikátor finančního produktu / účtu
+        required: true
+        example: "ACC-55443322"
+
+      - name: product_type
+        type: string
+        description: Typ finančního produktu (např. Běžný účet, Spořicí účet, Úvěr)
+        required: true
+        example: "Current Account"
+
+      - name: customer_balance
+        type: decimal
+        description: Aktuální zůstatek na finančním produktu klienta
+        required: true
+        example: 154200.75
+
+      - name: currency
+        type: string
+        description: Měna produktu - ISO 4217 kód
+        required: true
+        example: "CZK"
+
+      - name: created_at
+        type: timestamp
+        description: Čas vygenerování a zápisu záznamu
+        required: true
+        example: "2024-02-01T06:30:00Z"
+
+# ============================================================
+# KVALITA DAT - pravidla pro validaci
+# ============================================================
+quality:
+  - rule: not_null
+    field: record_id
+    description: ID záznamu nesmí být prázdné
+
+  - rule: not_null
+    field: business_date
+    description: Datum záznamu nesmí být prázdné
+
+  - rule: unique
+    field: record_id
+    description: Každý záznam musí mít unikátní ID
+
+  - rule: not_null
+    field: customer_id
+    description: Identifikátor klienta nesmí chybět
+
+  - rule: not_null
+    field: customer_balance
+    description: Hodnota zůstatku klienta nesmí být prázdná
+
+# ============================================================
+# SLA - dohoda o úrovni služeb
+# ============================================================
+sla:
+  availability: 99.5%                      # Dostupnost dat
+  data_latency: T+1                        # Zpoždění dat (čerstvost)
+  retention_period: 36 months              # Jak dlouho jsou data uchovávána
+  support_contact: josef.kunik@nova-banka.cz
