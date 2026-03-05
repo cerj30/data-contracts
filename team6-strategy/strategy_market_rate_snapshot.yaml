@@ -1,0 +1,48 @@
+kind: DataContract
+version: 1.0.0
+dataset:
+  name: strategy_kpi_aggregation # Zástupný název podle předchozího kontextu (Tým 6)
+  domain: strategy
+  owner: team_6_strategy
+  description: "Agregovaný datový produkt obsahující klíčové strategické metriky banky pro měření ambice anticipativního bankovnictví."
+
+schema:
+  type: tabular
+  columns:
+    - name: report_date
+      type: date
+      description: "Referenční datum reportingu"
+      is_primary_key: true
+    - name: nps_score
+      type: decimal
+      description: "Net Promoter Score (agregováno z Customer Service)"
+    - name: cost_to_serve
+      type: decimal
+      description: "Průměrné náklady na obsluhu klienta (Cost-to-Serve)"
+    - name: automated_resolution_rate
+      type: decimal
+      description: "ARR - Podíl požadavků vyřešených umělou inteligencí bez zásahu člověka"
+
+quality:
+  checks:
+    - column: nps_score
+      type: range
+      min: -100
+      max: 100
+    - column: automated_resolution_rate
+      type: range
+      min: 0
+      max: 1
+    - column: report_date
+      type: not_null
+
+sla:
+  update_frequency: "0 6 * * *" # Cron expression (denně v 6:00)
+  freshness: 24h
+  availability: 99.5%
+
+security:
+  pii_contains: false
+  access_roles:
+    - strategy_analyst
+    - c_level_exec
