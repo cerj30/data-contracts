@@ -1,0 +1,146 @@
+# ============================================================
+# DATA CONTRACT - ACCOUNTING DEVIATION SNAPSHOT
+# ============================================================
+dataContractSpecification: 1.1.0
+
+# Unikátní identifikátor data produktu
+id: urn:businessdomain:nova-banka:steering-data:accounting-deviation-snapshot
+
+info:
+  title: DP_ACCOUNTING_DEVIATION_SNAPSHOT                   # Název data produktu (velká písmena)
+  name: Accounting Deviation Snapshot                       # Čitelný název
+  maturity_score: 60%                                       # Vyspělost produktu (0-100%)
+  version: 1.0.0                                            # Verze ve formátu major.minor.patch
+  status: in development                                    # Možnosti: draft / in development / active / deprecated
+
+  description: |
+    Data produkt slouží k vyřešení deviací mezi zůstatky hlavní knihy (GL) a klientskými daty. 
+    Zajišťuje bezchybný reporting mateřské společnosti, včasnou detekci chyb a důvěryhodnost finančních výkazů.
+    Konzumenti: Head Office (matka), Data Stewardi, Účetnictví.
+    Data latency: T + 1 (závisí na dostupnosti produktů GL Balances a Customer Balances).
+
+    Záznamy jsou na úrovni detailu: 1 řádek = 1 GCOA účet a jeho vyčíslená odchylka v CZK.
+
+    Filter Rules:
+    * Pouze záznamy s platným business_date
+    * Zahrnuje pouze vyčíslené rozdíly (odchylky) mezi GL a agregovanými klientskými daty
+
+    Use Cases:
+    * UC1 - Automatické generování DEVIATION_REPORT pro reportování Head Office.
+    * UC2 - Identifikace nesrovnalostí pro opravy zdrojových dat Data Stewardy.
+    * UC3 - Plnění požadavků pro regulatorní reporting a finanční rekonciliaci.
+
+  owner: Nova Banka \ IT Squad Steering data \ Tým 4
+  contact:
+    name: Josef Kuník
+    email: josef.kunik@nova-banka.cz
+
+# ============================================================
+# SERVERY - kde jsou data fyzicky uložena
+# ============================================================
+servers:
+  PRODUCTION:
+    type: databricks                        # Typ databáze
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: steering-prod
+    table: dp_accounting_deviation_snapshot
+
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: steering-dev
+    table: dp_accounting_deviation_snapshot
+
+# ============================================================
+# SCHEMA - struktura dat (tabulky a sloupce)
+# ============================================================
+schema:
+  - name: dp_accounting_deviation_snapshot
+    description: Přehled odchylek (deviací) mezi hlavní knihou a klientskými daty vztažený na GCOA
+    fields:
+
+      - name: record_id
+        type: string
+        description: Unikátní identifikátor záznamu (UUID)
+        required: true
+        unique: true
+        example: "abc12345-d678-90ef-1234-56789abcdef0"
+
+      - name: business_date
+        type: date
+        description: Datum záznamu ve formátu YYYY-MM-DD
+        required: true
+        example: "2024-01-31"
+
+      - name: gcoa_account
+        type: string
+        description: Číslo účtu v globální účetní osnově mateřské společnosti (GCOA)
+        required: true
+        example: "10010000"
+
+      - name: gl_balance_aggregated
+        type: decimal
+        description: Agregovaný zůstatek z hlavní knihy pro daný GCOA účet
+        required: true
+        example: 2500000.50
+
+      - name: customer_balance_aggregated
+        type: decimal
+        description: Agregovaný zůstatek z klientských systémů namapovaný na daný GCOA účet
+        required: true
+        example: 2499500.50
+
+      - name: deviation_amount
+        type: decimal
+        description: Vyčíslená odchylka (rozdíl) mezi GL a klientskými daty (GL - Customer)
+        required: true
+        example: 500.00
+
+      - name: currency
+        type: string
+        description: Měna odchylky - ISO 4217 kód
+        required: true
+        example: "CZK"
+
+      - name: created_at
+        type: timestamp
+        description: Čas vygenerování a zápisu záznamu
+        required: true
+        example: "2024-02-01T07:00:00Z"
+
+# ============================================================
+# KVALITA DAT - pravidla pro validaci
+# ============================================================
+quality:
+  - rule: not_null
+    field: record_id
+    description: ID záznamu nesmí být prázdné
+
+  - rule: not_null
+    field: business_date
+    description: Datum záznamu nesmí být prázdné
+
+  - rule: unique
+    field: record_id
+    description: Každý záznam musí mít unikátní ID
+
+  - rule: not_null
+    field: gcoa_account
+    description: Vazba na GCOA (globální účet) nesmí chybět
+
+  - rule: not_null
+    field: deviation_amount
+    description: Hodnota odchylky nesmí být prázdná (může být i 0.00, pokud k odchylce nedošlo)
+
+# ============================================================
+# SLA - dohoda o úrovni služeb
+# ============================================================
+sla:
+  availability: 99.5%                      # Dostupnost dat
+  data_latency: T+1                        # Zpoždění dat (čerstvost)
+  retention_period: 36 months              # Jak dlouho jsou data uchovávána
+  support_contact: josef.kunik@nova-banka.cz

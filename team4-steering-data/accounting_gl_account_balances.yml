@@ -1,0 +1,140 @@
+# ============================================================
+# DATA CONTRACT - ACCOUNTING GL ACCOUNT BALANCES
+# ============================================================
+dataContractSpecification: 1.1.0
+
+# Unikátní identifikátor data produktu
+id: urn:businessdomain:nova-banka:finance:accounting-gl-account-balances
+
+info:
+  title: DP_ACCOUNTING_GL_ACCOUNT_BALANCES          # Název data produktu (velká písmena)
+  name: Accounting GL Account Balances              # Čitelný název
+  maturity_score: 60%                               # Vyspělost produktu (0-100%)
+  version: 1.0.0                                    # Verze ve formátu major.minor.patch
+  status: in development                            # Možnosti: draft / in development / active / deprecated
+
+  description: |
+    Data produkt poskytuje sjednocený a auditovatelný pohled na zůstatky hlavní knihy s jasnou vazbou na GCOA (Globální účetní osnova) pro další využití v bance. 
+    Přispívá ke zrychlení uzávěrkových prací a slouží jako jednotný zdroj pravdy o firemních financích pro ostatní domény.
+    Konzumenti: Steering data, BI, Controlling, Management.
+    Data latency: T + 1 (denní EOD zůstatky)
+
+    Záznamy jsou na úrovni detailu: 1 řádek = 1 finanční produkt klienta a jeho aktuální zůstatek.
+
+Filter Rules:
+    * Pouze záznamy s platným business_date
+    * Záznamy musí obsahovat platné mapování na LCOA nebo GCOA
+
+    Use Cases:
+    * UC1 - Podklad pro datovou rekonciliaci (porovnání GL vs. klientská data).
+    * UC2 - Výpočet celkové bilance banky.
+    * UC3 - Finanční controlling a Head Office reporting.
+
+  owner: Nova Banka \ Finance a Účetnictví \ Tým 4
+  contact:
+    name: Josef Kuník
+    email: josef.kunik@nova-banka.cz
+
+# ============================================================
+# SERVERY - kde jsou data fyzicky uložena
+# ============================================================
+servers:
+  PRODUCTION:
+    type: databricks                        # Typ databáze
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: finance-prod
+    table: dp_accounting_gl_account_balances
+
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: finance-dev
+    table: dp_accounting_gl_account_balances
+
+# ============================================================
+# SCHEMA - struktura dat (tabulky a sloupce)
+# ============================================================
+schema:
+  - name: dp_accounting_gl_account_balances
+    description: Denní zůstatky hlavní knihy (EOD) vztažené k LCOA a GCOA
+    fields:
+
+      - name: record_id
+        type: string
+        description: Unikátní identifikátor záznamu (UUID)
+        required: true
+        unique: true
+        example: "123e4567-e89b-12d3-a456-426614174000"
+
+      - name: business_date
+        type: date
+        description: Datum záznamu ve formátu YYYY-MM-DD (End of Day)
+        required: true
+        example: "2024-01-31"
+
+      - name: lcoa_account
+        type: string
+        description: Číslo účtu v lokální účetní osnově (LCOA)
+        required: true
+        example: "211000"
+
+      - name: gcoa_account
+        type: string
+        description: Číslo účtu v globální účetní osnově mateřské společnosti (GCOA)
+        required: true
+        example: "10010000"
+
+      - name: gl_balance
+        type: decimal
+        description: Celkový zůstatek na účtu hlavní knihy
+        required: true
+        example: 2500000.50
+
+      - name: currency
+        type: string
+        description: Měna účtu - ISO 4217 kód
+        required: true
+        example: "CZK"
+
+      - name: created_at
+        type: timestamp
+        description: Čas vygenerování a zápisu záznamu
+        required: true
+        example: "2024-02-01T06:00:00Z"
+
+# ============================================================
+# KVALITA DAT - pravidla pro validaci
+# ============================================================
+quality:
+  - rule: not_null
+    field: record_id
+    description: ID záznamu nesmí být prázdné
+
+  - rule: not_null
+    field: business_date
+    description: Datum záznamu nesmí být prázdné
+
+  - rule: unique
+    field: record_id
+    description: Každý záznam musí mít unikátní ID
+
+  - rule: not_null
+    field: gcoa_account
+    description: Vazba na GCOA (globální účet) nesmí chybět
+
+  - rule: not_null
+    field: gl_balance
+    description: Hodnota zůstatku (GL Balance) nesmí být prázdná
+
+# ============================================================
+# SLA - dohoda o úrovni služeb
+# ============================================================
+sla:
+  availability: 99.5%                      # Dostupnost dat
+  data_latency: T+1                        # Zpoždění dat (čerstvost)
+  retention_period: 36 months              # Jak dlouho jsou data uchovávána
+  support_contact: josef.kunik@nova-banka.cz
