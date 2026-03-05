@@ -1,0 +1,112 @@
+# ============================================================
+# DATA CONTRACT
+# ============================================================
+dataContractSpecification: 1.0.0
+
+id: urn:businessdomain:nova-banka:portfolio:retail-sales-customer-cohort-aggregation
+
+info:
+  title: DP_RETAIL_SALES_CUSTOMER_COHORT_AGGREGATION
+  name: Retail Sales Customer Cohort Aggregation
+  maturity_score: 65%
+  version: 1.0.0
+  status: in development
+
+  description: |
+    Datový produkt sleduje aktivaci nově získaných klientů
+    a jejich první interakce s bankovními službami.
+
+    Umožňuje analyzovat, jak rychle se noví klienti začnou aktivně
+    zapojovat do používání bankovních produktů (např. první platba,
+    první vklad nebo aktivace mobilní aplikace).
+
+    Produkt slouží k analýze engagementu klientů,
+    kohortní analýze a strategickému reportování managementu.
+
+    Latence dat: End of Day
+
+    Use Cases:
+    * UC1 - sledování aktivace klientů po onboardingu
+    * UC2 - analýza engagementu klientů
+    * UC3 - management reporting
+
+  owner: Nova Banka \ Team1 \ Digital Sales
+  contact:
+    name: Digital Sales Team
+    email: digital.sales@nova-banka.cz
+
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-prod
+    schema: portfolio
+    table: dp_retail_customer_activation_history
+
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-dev
+    schema: portfolio
+    table: dp_retail_customer_activation_history
+
+
+schema:
+  - name: dp_retail_customer_activation_history
+    description: Historie aktivace klientů
+    fields:
+
+      - name: activation_id
+        type: string
+        description: Unikátní identifikátor aktivační události
+        required: true
+        unique: true
+
+      - name: customer_id
+        type: string
+        description: Identifikátor klienta
+        required: true
+
+      - name: activation_event
+        type: string
+        description: Typ aktivační události (first_payment, first_login, first_deposit)
+        required: true
+
+      - name: activation_timestamp
+        type: timestamp
+        description: Čas aktivační události
+        required: true
+
+      - name: engagement_score
+        type: decimal
+        description: Vypočtené skóre engagementu klienta
+        required: false
+
+      - name: customer_segment
+        type: string
+        description: Segment klienta
+        required: false
+
+
+quality:
+  - rule: not_null
+    field: activation_id
+
+  - rule: unique
+    field: activation_id
+
+  - rule: not_null
+    field: customer_id
+
+  - rule: not_null
+    field: activation_timestamp
+
+
+sla:
+  availability: 99.5%
+  data_latency: EOD
+  retention_period: 36 months
+  support_contact: portfolio.analytics@nova-banka.cz

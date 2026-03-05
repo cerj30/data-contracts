@@ -1,0 +1,110 @@
+dataContractSpecification: 1.0.0
+
+id: urn:businessdomain:nova-banka:digital-sales:retail-sales-customer-acquisition-history
+
+info:
+  title: DP_RETAIL_CUSTOMER_ACQUISITION_HISTORY
+  name: Retail Sales Customer Acquisition History
+  maturity_score: 60%
+  version: 1.0.0
+  status: in development
+
+  description: |
+    Datový produkt obsahuje historické události získání nových retailových klientů
+    napříč digitálními i fyzickými distribučními kanály banky.
+
+    Data umožňují analyzovat úspěšnost marketingových kampaní,
+    identifikovat nejefektivnější akviziční kanály a sledovat vývoj
+    digitální akvizice klientů.
+
+    Latence dat: Near real-time
+
+    Filtrační pravidla:
+    * pouze záznamy s platným customer_id
+    * pouze aktivní marketingové kampaně
+
+    Use Cases:
+    * UC1 - vyhodnocení výkonnosti marketingových kampaní
+    * UC2 - analýza akvizičních kanálů
+    * UC3 - generování leadů pro CRM kampaně
+
+  owner: Nova Banka \ Team1 \ Digital Sales
+  contact:
+    name: Digital Sales Team
+    email: digital.sales@nova-banka.cz
+
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-prod
+    schema: digital_sales
+    table: dp_retail_customer_acquisition_history
+
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-dev
+    schema: digital_sales
+    table: dp_retail_customer_acquisition_history
+
+
+schema:
+  - name: dp_retail_customer_acquisition_history
+    description: Historie akvizičních událostí klientů
+    fields:
+
+      - name: acquisition_id
+        type: string
+        description: Unikátní identifikátor akviziční události
+        required: true
+        unique: true
+
+      - name: customer_id
+        type: string
+        description: Unikátní identifikátor klienta
+        required: true
+
+      - name: campaign_id
+        type: string
+        description: Identifikátor marketingové kampaně
+        required: false
+
+      - name: acquisition_channel
+        type: string
+        description: Akviziční kanál (digitální, pobočka, call centrum)
+        required: true
+
+      - name: product_type
+        type: string
+        description: Produkt sjednaný klientem
+        required: false
+
+      - name: acquisition_timestamp
+        type: timestamp
+        description: Čas akviziční události
+        required: true
+
+
+quality:
+  - rule: not_null
+    field: acquisition_id
+
+  - rule: unique
+    field: acquisition_id
+
+  - rule: not_null
+    field: customer_id
+
+  - rule: not_null
+    field: acquisition_timestamp
+
+
+sla:
+  availability: 99.5%
+  data_latency: near_real_time
+  retention_period: 36 months
+  support_contact: digital.sales@nova-banka.cz
