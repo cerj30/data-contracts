@@ -1,190 +1,58 @@
-dataContractSpecification: "0.9.3"
-id: "urn:dataproduct:investment-banking:investment-peer-benchmark-profile"
+dataContractSpecification: 1.1.0
+id: urn:businessdomain:nova-banka:investment-banking:investment-peer-benchmark-profile
+
 info:
-  title: "Investment Peer Benchmark Profile"
-  version: "1.0"
-  status: "active"
+  title: DP_INVESTMENT_PEER_BENCHMARK_PROFILE
+  name: Investment Peer Benchmark Profile
+  version: 1.0.0
+  status: active
   description: |
-    Analytical data product that identifies statistically similar companies (peer groups)
-    using clustering and benchmarking techniques based on corporate financial and market characteristics.
-  owner: "Team 8 – Investment Banking"
+    Peer group benchmarking pro investicni analyzy.
+  owner: Nova Banka \ Investment Banking \ Tym 8
   contact:
-    name: "Head of Investment Banking (Data Product Owner)"
-    url: "https://<INTERNAL_CATALOG_OR_TEAM_CHANNEL_URL>"
-    email: "<DPO_EMAIL>@<BANK_DOMAIN>"
+    name: Head of Investment Banking
+    email: investment.banking@nova-banka.cz
 
 servers:
-  production:
-    type: "bigquery"
-    project: "<GCP_PROJECT_OR_PLATFORM_PROJECT>"
-    dataset: "<BQ_DATASET_NAME>"
-    description: "Bank Data Lake / analytics platform production environment."
-  # alternatively (if not BigQuery), replace server type with e.g. snowflake/databricks/postgres and config accordingly.
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: vse_banka
+    schema: investment_banking
+    table: dp_investment_peer_benchmark_profile
 
-terms:
-  usage: |
-    Internal use for investment benchmarking, identification of comparable companies for investment recommendations,
-    and peer-to-peer comparison for corporate risk profiling.
-    Suitable for analytics, BI dashboards, and controlled data exports.
-  limitations: |
-    Not suitable for real-time use cases (daily EOD refresh).
-    Access is restricted to authorized roles (Investment Banking, Risk Management).
-    Data must not be used to identify natural persons; corporate profiling only.
-  billing: |
-    Internal chargeback/showback of infrastructure and processing costs across consuming business units.
-  noticePeriod: "P3M"
-
-servicelevels:
-  # daily refresh cycle (EOD) and high availability are described in the canvas
-  freshness:
-    description: "Daily refresh cycle (EOD)."
-    # If you want machine-checkable freshness with CLI, define a concrete target like:
-    # maxAge: "P1D"
-  availability:
-    description: "High availability for Investment Banking and Risk Management teams."
-  latency:
-    description: "Data available within agreed batch window after EOD processing."
-    # If you can define it strictly later, you can add e.g.:
-    # max: "PT6H"
-
-models:
-  benchmark_profiles:
-    type: "table"
-    description: |
-      One record per company per as_of_date containing peer group assignment and benchmark metrics
-      produced by the peer clustering model.
+schema:
+  - name: dp_investment_peer_benchmark_profile
+    description: Peer group metriky
     fields:
-      as_of_date:
-        type: "date"
+      - name: company_id
+        type: string
+        description: ID spolecnosti
         required: true
-        description: "Business effective date (EOD) for which the benchmark profile is computed."
-      company_id:
-        type: "text"
+      - name: peer_group_id
+        type: string
+        description: ID peer clusteru
         required: true
-        description: "Unique identifier of the corporate entity (aligned with Investment Corporate Snapshot)."
-      peer_group_id:
-        type: "text"
+      - name: similarity_score
+        type: decimal
+        description: Skore podobnosti
         required: true
-        description: "Identifier of the assigned peer cluster/group."
-      model_run_id:
-        type: "text"
+      - name: created_at
+        type: timestamp
+        description: Cas vytvoreni
         required: true
-        description: "Identifier of the clustering run that produced the assignments (lineage/audit)."
-      similarity_score:
-        type: "decimal"
-        required: true
-        description: "Similarity score of the company to its peer group centroid or representative profile."
-      revenue:
-        type: "decimal"
-        required: false
-        description: "Revenue (currency and definition aligned with upstream corporate snapshot)."
-      ebitda:
-        type: "decimal"
-        required: false
-        description: "EBITDA (currency and definition aligned with upstream corporate snapshot)."
-      leverage:
-        type: "decimal"
-        required: false
-        description: "Leverage metric (definition aligned with upstream corporate snapshot)."
-      source_snapshot_version:
-        type: "text"
-        required: true
-        description: "Version or batch id of Investment Corporate Snapshot used as input."
-      created_at:
-        type: "timestamp"
-        required: true
-        description: "Timestamp when the record was produced by the pipeline."
-
-    # table-level constraints
-    primaryKey:
-      - as_of_date
-      - company_id
-
-  peer_group_members:
-    type: "table"
-    description: |
-      Optional explainer table listing peer group composition (members) per as_of_date and model_run_id.
-      Useful for transparency and validation by analysts.
-    fields:
-      as_of_date:
-        type: "date"
-        required: true
-      peer_group_id:
-        type: "text"
-        required: true
-      model_run_id:
-        type: "text"
-        required: true
-      company_id:
-        type: "text"
-        required: true
-      rank_in_group:
-        type: "integer"
-        required: false
-        description: "Optional ranking inside peer group (e.g., by similarity score)."
-      similarity_score:
-        type: "decimal"
-        required: false
-        description: "Optional similarity score per member within the group."
-
-    primaryKey:
-      - as_of_date
-      - peer_group_id
-      - model_run_id
-      - company_id
 
 quality:
-  description: |
-    Data quality gates for inputs and outputs of the peer clustering model.
-    Ensures minimum completeness and validity of financial/market indicators and segment assignments
-    before distribution to business users.
-  # Keep checks simple and portable; you can later switch to Soda/GE-specific DSL if you use the CLI integrations.
-  checks:
-    - model: benchmark_profiles
-      assertions:
-        - "row_count > 0"
-        - "not_null(as_of_date)"
-        - "not_null(company_id)"
-        - "not_null(peer_group_id)"
-        - "not_null(model_run_id)"
-        - "unique(as_of_date, company_id)"
-        - "value_range(similarity_score, 0, 1)"
-    - model: peer_group_members
-      assertions:
-        - "row_count > 0"
-        - "not_null(as_of_date)"
-        - "not_null(peer_group_id)"
-        - "not_null(model_run_id)"
-        - "not_null(company_id)"
+  - rule: not_null
+    field: company_id
+    description: ID nesmi byt prazdne
+  - rule: range
+    field: similarity_score
+    description: Musi byt 0 az 1
 
-# ---- Extensions (custom metadata; allowed by spec) ----
-x-data-product:
-  classification: "Analytical Data Product"
-  domain: "Investment Banking"
-  domainOwner: "Head of Investment Banking"
-  consumers:
-    - "Investment Banking deal teams"
-    - "Risk Management"
-    - "Team Strategie"
-  delivery:
-    platform: "Bank Data Lake and analytics platform"
-    accessChannels:
-      - "App interface"
-      - "Controlled data exports"
-    metadata: "Internal data catalog"
-  lineage:
-    upstream:
-      - name: "Investment Corporate Snapshot"
-        type: "data-product"
-        id: "urn:dataproduct:investment-banking:investment-corporate-snapshot"
-    downstream:
-      - name: "Strategy KPI Aggregation"
-        type: "data-product"
-  rules_ko:
-    - "Minimum dataset completeness required for clustering model."
-    - "Financial and market indicators must pass quality validation."
-    - "Segment assignments must be validated before distribution to business users."
-  retention:
-    description: "Historical benchmark profiles are retained for trend analysis (exact retention period to be defined)."
-  governance:
-    accessControl: "Role-based access for Investment Banking and Risk Management."
+sla:
+  availability: 99.5%
+  data_latency: D+1
+  retention_period: 60 months
+  support_contact: investment.banking@nova-banka.cz
