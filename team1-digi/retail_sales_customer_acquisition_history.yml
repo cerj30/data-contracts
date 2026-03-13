@@ -10,6 +10,10 @@ info:
   description: |
     Datový produkt obsahuje historické události získání nových retailových klientů
     napříč digitálními i fyzickými distribučními kanály banky.
+    Latence dat: Near real-time
+    Use Cases:
+    * UC1 - vyhodnocení výkonnosti marketingových kampaní
+    * UC2 - analýza akvizičních kanálů
   owner: Nova Banka \ Team1 \ Digital Sales
   contact:
     name: Digital Sales Team
@@ -46,8 +50,12 @@ schema:
         required: true
       - name: acquisition_channel
         type: string
-        description: Akviziční kanál
+        description: Akviziční kanál (digitální, pobočka, call centrum)
         required: true
+      - name: product_type
+        type: string
+        description: Produkt sjednaný klientem
+        required: false
       - name: acquisition_timestamp
         type: timestamp
         description: Čas akviziční události
@@ -56,12 +64,16 @@ schema:
 quality:
   - rule: not_null
     field: acquisition_id
+    description: ID události nesmí být prázdné
   - rule: unique
     field: acquisition_id
+    description: Každá událost musí mít unikátní ID
   - rule: not_null
     field: customer_id
+    description: ID klienta nesmí být prázdné
   - rule: not_null
     field: acquisition_timestamp
+    description: Čas události nesmí být prázdný
 
 sla:
   availability: 99.5%
