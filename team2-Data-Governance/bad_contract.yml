@@ -1,0 +1,26 @@
+dataContractSpecification: 1.1.0
+id: urn:businessdomain:nova-banka:data-governance:bad-test
+
+info:
+  title: DP_BAD_TEST
+  version: 99
+  status: neexistujici_status
+  owner: Nova Banka
+
+servers:
+  PRODUCTION:
+    type: databricks
+    catalog: vse_banka
+    schema: data_governance_ea
+    table: bad_test
+
+schema:
+  - name: bad_test
+    fields:
+      - name: my_field
+        type: superultra_type
+        required: true
+
+quality:
+  - rule: vymyslene_pravidlo
+    field: my_field
