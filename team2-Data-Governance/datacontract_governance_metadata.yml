@@ -1,0 +1,69 @@
+dataContractSpecification: 1.1.0
+id: urn:businessdomain:nova-banka:data-governance:governance-metadata-profile
+
+info:
+  title: DP_GOVERNANCE_METADATA_PROFILE
+  name: Data Governance Metadata Profile
+  version: 1.0.0
+  status: in development
+  description: |
+    Metadata o datových produktech banky.
+    Use Cases:
+    * UC1 - Data Catalog
+    * UC2 - Knowledge Graph
+  owner: Nova Banka \ Team2 \ Data Governance
+  contact:
+    name: Data Governance Team
+    email: data.governance@nova-banka.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: vse_banka
+    schema: data_governance_ea
+    table: dp_governance_metadata_profile
+
+schema:
+  - name: dp_governance_metadata_profile
+    description: Metadata o datových produktech
+    fields:
+      - name: product_id
+        type: string
+        description: Unikátní identifikátor datového produktu
+        required: true
+        unique: true
+      - name: product_name
+        type: string
+        description: Název datového produktu
+        required: true
+      - name: domain
+        type: string
+        description: Business doména
+        required: true
+      - name: status
+        type: string
+        description: Stav produktu
+        required: true
+      - name: last_updated
+        type: timestamp
+        description: Čas poslední aktualizace
+        required: true
+
+quality:
+  - rule: not_null
+    field: product_id
+    description: ID nesmí být prázdné
+  - rule: unique
+    field: product_id
+    description: ID musí být unikátní
+  - rule: not_null
+    field: product_name
+    description: Název nesmí být prázdný
+
+sla:
+  availability: 99.0%
+  data_latency: D+1
+  retention_period: 60 months
+  support_contact: data.governance@nova-banka.cz
