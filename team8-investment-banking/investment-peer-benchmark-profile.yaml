@@ -7,9 +7,8 @@ info:
   version: 1.0.0
   status: active
   description: |
-    Analytický produkt identifikující statisticky podobné společnosti pomocí clusteringu.
-    Use Cases: Investiční benchmarking, Korporátní risk profiling
-  owner: Nova Banka \ Investment Banking \ Tým 8
+    Analyticke skórovani peer skupin pro investicni benchmarking.
+  owner: Nova Banka \ Investment Banking \ Tym 8
   contact:
     name: Head of Investment Banking
     email: investment.banking@nova-banka.cz
@@ -25,42 +24,36 @@ servers:
 
 schema:
   - name: dp_investment_peer_benchmark_profile
-    description: Peer group přiřazení a benchmark metriky
+    description: Peer group prirazeni a benchmark metriky
     fields:
       - name: as_of_date
         type: date
-        description: Business datum pro které je benchmark vypočítán
+        description: Business datum
         required: true
       - name: company_id
         type: string
-        description: Identifikátor korporátní entity
+        description: ID spolecnosti
         required: true
       - name: peer_group_id
         type: string
-        description: Identifikátor peer clusteru
+        description: ID peer clusteru
         required: true
       - name: similarity_score
         type: decimal
-        description: Skóre podobnosti společnosti k peer group
+        description: Skore podobnosti
         required: true
       - name: created_at
         type: timestamp
-        description: Čas vygenerování záznamu
+        description: Cas vygenerovani
         required: true
 
 quality:
   - rule: not_null
-    field: as_of_date
-    description: Datum nesmí být prázdné
-  - rule: not_null
     field: company_id
-    description: ID společnosti nesmí být prázdné
-  - rule: not_null
-    field: peer_group_id
-    description: ID peer group nesmí být prázdné
+    description: ID nesmi byt prazdne
   - rule: range
     field: similarity_score
-    description: Similarity score musí být 0 až 1
+    description: Musi byt 0 az 1
 
 sla:
   availability: 99.5%
