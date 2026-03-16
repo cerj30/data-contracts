@@ -1,0 +1,450 @@
+# ============================================================
+# DATA CONTRACT TEMPLATE v3.0
+# Nova Banka — Data Mesh Repository
+# Spec: datacontract.com v1.1.0
+# Dawiso: Data Product + Business Glossary ready
+# ============================================================
+#
+# ┌─────────────────────────────────────────────────────────┐
+# │  NAMING CONVENTION  [Domain] [Concept] [Context] [Suffix]│
+# ├─────────────────────────────────────────────────────────┤
+# │ DOMAIN  — assign by WHERE data is CONSUMED (not by team)│
+# │   ESG Risk · Credit Risk · Investment · Retail Sales    │
+# │   Customer Service · Accounting · Strategy              │
+# │                                                         │
+# │ CONCEPT — core business noun at row granularity         │
+# │   Customer · Company · Account · Interaction · Offer    │
+# │   Lead · Cohort · Building · Credit Memo · GL Account   │
+# │   Peer Company · Market Rate · KPI · Deviation          │
+# │   Self-Service · Digital Agreement                      │
+# │                                                         │
+# │ CONTEXT — optional; add only to differentiate two       │
+# │   products with the same Domain + Concept               │
+# │   Acquisition · Underwriting · Energy · Peer · Digital  │
+# │                                                         │
+# │ PRODUCT TYPE → SUFFIX:                                  │
+# │   EVENT       → History | Log | Events | Transactions   │
+# │   STATE       → Profile | Status | Snapshot | Balances  │
+# │                  Performance                            │
+# │   AGGREGATION → Income | Aggregation | Performance      │
+# │                                                         │
+# │ VALID EXAMPLES (4–5 words preferred, max 6):            │
+# │   Retail Sales Customer Acquisition History      (5 ✓)  │
+# │   Customer Service Interaction Performance       (4 ✓)  │
+# │   Accounting GL Account Balances                 (4 ✓)  │
+# │   Credit Risk Credit Memo History                (5 ✓)  │
+# │   ESG Risk Building Energy Profile               (5 ✓)  │
+# │   Strategy KPI Aggregation                       (3 ✓)  │
+# │   Investment Peer Company Profile                (4 ✓)  │
+# └─────────────────────────────────────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────┐
+# │  SELF-CHECK before saving                               │
+# │  1. Every word English? (replace any Czech word)        │
+# │  2. Order [Domain][Concept][Context][Suffix] respected? │
+# │  3. Suffix matches product_type?                        │
+# │  4. No frequency (EOD, daily) or system name (SAP, CAS)?│
+# │  5. Context truly needed? (remove if not)               │
+# │  6. Concept is a concrete business noun?                │
+# │  7. Total ≤ 6 words, ideally 4–5?                       │
+# │  8. Domain by consumption, not by team origin?          │
+# └─────────────────────────────────────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────┐
+# │  DAWISO FIELD MAPPING                                   │
+# ├──────────────────────────┬──────────────────────────────┤
+# │ Dawiso Data Product      │ Contract field               │
+# ├──────────────────────────┼──────────────────────────────┤
+# │ Name                     │ info.name                    │
+# │ Description              │ info.description             │
+# │ Domain                   │ x-dawiso.data_product.domain │
+# │ Business Owner           │ x-dawiso.data_product        │
+# │                          │   .business_owner            │
+# │ Product Owner            │ x-dawiso.data_product        │
+# │                          │   .product_owner             │
+# │ Workflow Status          │ x-dawiso.data_product        │
+# │                          │   .dawiso_status             │
+# │ Tags                     │ x-dawiso.data_product.tags   │
+# │ SLA                      │ sla                          │
+# │ Input Contracts          │ x-dawiso.data_product        │
+# │                          │   .lineage.upstream          │
+# │ Output Contracts         │ x-dawiso.data_product        │
+# │                          │   .lineage.downstream        │
+# │ Data Contract (link)     │ id (URN)                     │
+# ├──────────────────────────┼──────────────────────────────┤
+# │ Dawiso Glossary Term     │ Contract field               │
+# ├──────────────────────────┼──────────────────────────────┤
+# │ Term Name                │ x-dawiso.glossary_entry.term │
+# │ Definition               │ x-dawiso.glossary_entry      │
+# │                          │   .definition                │
+# │ FIBO Class               │ x-dawiso.glossary_entry      │
+# │                          │   .fibo_class                │
+# │ Domain                   │ x-dawiso.glossary_entry      │
+# │                          │   .domain                    │
+# │ Owner / Steward          │ x-dawiso.glossary_entry      │
+# │                          │   .steward                   │
+# │ Status                   │ x-dawiso.glossary_entry      │
+# │                          │   .dawiso_status             │
+# │ Synonyms                 │ x-dawiso.glossary_entry      │
+# │                          │   .synonyms                  │
+# │ Related Capability       │ x-dawiso.glossary_entry      │
+# │                          │   .related_capability        │
+# │ Knowledge Graph Triple   │ x-dawiso.glossary_entry      │
+# │                          │   .knowledge_graph_triple    │
+# └──────────────────────────┴──────────────────────────────┘
+# ============================================================
+
+dataContractSpecification: 1.1.0
+
+# URN: urn:businessdomain:nova-banka:<domain-kebab>:<generated-name-kebab>
+# e.g. urn:businessdomain:nova-banka:retail-sales:customer-acquisition-history
+id: urn:businessdomain:nova-banka:<domain-kebab>:<generated-name-kebab>
+
+# ============================================================
+# INFO
+# ============================================================
+info:
+  # DP_ + Generated Name in UPPER_SNAKE_CASE
+  # e.g. DP_RETAIL_SALES_CUSTOMER_ACQUISITION_HISTORY
+  title: DP_<DOMAIN>_<CONCEPT>_<CONTEXT>_<SUFFIX>
+
+  # Generated Name — Title Case, spaces
+  # e.g. Retail Sales Customer Acquisition History
+  name: <Domain> <Concept> <Context> <Suffix>
+
+  # EVENT | STATE | AGGREGATION  (drives suffix choice above)
+  product_type: EVENT
+
+  maturity_score: 0%     # 0–100%
+
+  version: 0.1.0         # major.minor.patch
+                          # draft/in development → 0.x.x | active → 1.x.x
+
+  status: draft          # draft | in development | active | deprecated
+                          # Dawiso mapping:
+                          #   draft          → design
+                          #   in development → in_development
+                          #   active         → published
+                          #   deprecated     → obsolete
+
+  description: |
+    <Business purpose paragraph in English.>
+
+    Data latency: <D+1 | T+1 | near_real_time | per request>
+
+    Business Entity:  <Core entity at row granularity, e.g. "Customer">
+    Business Purpose: <Why this data product exists — one sentence.>
+    Consumers:        <Comma-separated list of consuming teams / systems.>
+    Data Sources:     <Comma-separated list of upstream source systems.>
+
+    Filter Rules:
+    * <Filter rule 1>
+    * <Filter rule 2>
+
+    Use Cases:
+    * UC1 - <Primary use case>
+    * UC2 - <Secondary use case>
+
+  owner: Nova Banka \ <TeamN> \ <Domain>
+  contact:
+    name: <Full Name>
+    email: <email@nova-banka.cz>
+
+# ============================================================
+# SERVERS
+# ============================================================
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: <domain-kebab>-prod        # e.g. retail-sales-prod
+    table: dp_<domain>_<concept>_<suffix>  # lowercase, underscores
+
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: <domain-kebab>-dev
+    table: dp_<domain>_<concept>_<suffix>
+
+# ============================================================
+# SCHEMA
+# Valid field types:
+#   string | integer | decimal | float | double | boolean |
+#   date | timestamp | array | object | number | bigint | long
+# ============================================================
+schema:
+  - name: dp_<domain>_<concept>_<suffix>
+    description: <Table description in English>
+    fields:
+
+      # ── Standard system fields (always include) ──────────
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        example: "550e8400-e29b-41d4-a716-446655440000"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        example: "2024-01-31"
+
+      - name: region
+        type: string
+        description: Geographic region — allowed values CZ or SK
+        required: true
+        enum: [CZ, SK]
+        example: "CZ"
+
+      - name: created_at
+        type: timestamp
+        description: Record creation timestamp (UTC)
+        required: true
+        example: "2024-01-31T08:00:00Z"
+
+      - name: updated_at
+        type: timestamp
+        description: Record last update timestamp (UTC)
+        required: true
+        example: "2024-01-31T08:00:00Z"
+
+      # ── Business fields — replace / extend ───────────────
+      - name: <field_name>
+        type: string
+        description: <Field description in English — include unit if numeric>
+        required: true
+        example: "<example_value>"
+
+      - name: <field_name_2>
+        type: decimal
+        description: <Numeric field — specify unit and scale>
+        required: false
+        example: 0.00
+
+# ============================================================
+# DATA SOURCES  (upstream lineage)
+# ============================================================
+sources:
+  - name: <Source System Name>
+    type: internal            # internal | external
+    description: <What data this source provides>
+    freshness: <Daily EOD | D+1 | Real-time | Per request>
+    owner: <Team or system owner>
+
+  # - name: <External Registry Name>
+  #   type: external
+  #   description: <What it provides>
+  #   freshness: <Cadence>
+
+# ============================================================
+# DATA QUALITY
+# Valid rules: not_null | unique | accepted_values |
+#              min_value | max_value | regex | row_count | range
+# ============================================================
+quality:
+  - rule: not_null
+    field: record_id
+    description: Record ID must not be empty
+
+  - rule: unique
+    field: record_id
+    description: Every record must have a unique ID
+
+  - rule: not_null
+    field: business_date
+    description: Business date must not be empty
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+    description: Region must be CZ or SK
+
+  # - rule: regex
+  #   field: <field_name>
+  #   pattern: "^<pattern>$"
+  #   description: <field> must match the pattern
+
+  # - rule: range
+  #   field: <numeric_field>
+  #   min: 0
+  #   max: 100
+  #   description: <field> must be within range
+
+# ============================================================
+# SLA
+# ============================================================
+sla:
+  availability: 99.5%          # 99.0% non-critical | 99.5% standard | 99.9% critical
+  data_latency: D+1            # D+1 | T+1 | near_real_time | per request
+  retention_period: 36 months  # 36 default | 60 financial | 84 regulatory
+  support_contact: <email@nova-banka.cz>
+
+# ============================================================
+# TERMS OF USE
+# ============================================================
+terms:
+  usage: |
+    <Authorized use cases and consumer roles.>
+    Intended for: <Team / Role list>.
+  limitations: |
+    <Restrictions, access controls, prohibited uses.>
+    Data must not be used outside approved use cases without Data Product Owner consent.
+  noticePeriod: "P3M"    # ISO 8601 — 3-month deprecation notice (default)
+
+# ============================================================
+# SERVICE LEVELS  (detailed)
+# ============================================================
+servicelevels:
+  freshness:
+    description: "<Refresh cadence, e.g. Daily EOD batch by 07:00 CET.>"
+  availability:
+    description: "<Availability commitment and which teams it covers.>"
+  latency:
+    description: "<Time from source event to product availability.>"
+
+# ============================================================
+# DAWISO INTEGRATION
+# Provides all metadata required to publish this contract as:
+#   (A) a Data Product entry in Dawiso
+#   (B) a Business Glossary entry in Dawiso (FIBO-aligned)
+# ============================================================
+x-dawiso:
+
+  # ──────────────────────────────────────────────────────────
+  # (A) DAWISO DATA PRODUCT
+  # Maps to: Dawiso > Data Products > [New Product]
+  # ──────────────────────────────────────────────────────────
+  data_product:
+
+    # Workflow status in Dawiso lifecycle
+    # Contract status  → Dawiso status
+    # draft            → design
+    # in development   → in_development
+    # active           → published
+    # deprecated       → obsolete
+    dawiso_status: design        # design | in_development | published | obsolete
+
+    # Domain from controlled vocabulary — governs where the product appears in Dawiso
+    # ESG Risk | Credit Risk | Investment | Retail Sales |
+    # Customer Service | Accounting | Strategy
+    domain: <Domain>
+
+    # Roles — map to Dawiso user/group names
+    business_owner: <Role title, e.g. Head of Retail Sales>
+    product_owner: <Full Name — email@nova-banka.cz>
+    data_steward: <Full Name — email@nova-banka.cz>
+
+    # Tags for Dawiso search and filtering
+    tags:
+      - <domain-tag>        # e.g. retail-sales
+      - <product-type-tag>  # e.g. event-data
+      - <topic-tag>         # e.g. customer-acquisition
+
+    # Classification — appears in Dawiso data product card
+    # Operational | Analytical | Source-aligned | Consumer-aligned
+    classification: "<Classification> Data Product"
+
+    # Access — maps to Dawiso permissions / access control settings
+    access_control: "<Role-based: which roles may read / write / delete.>"
+    data_classification: Internal  # Public | Internal | Confidential | Restricted
+
+    # Lineage — maps to Dawiso Input/Output Contracts
+    lineage:
+      upstream:
+        - name: "<Source system name>"
+          type: internal-system    # internal-system | external-registry | data-product
+          owner: "<Owning team>"
+          description: "<What this source contributes to this product>"
+          dawiso_contract_id: "<URN or Dawiso object ID if the source is itself a Data Contract>"
+      downstream:
+        - name: "<Consuming product, report, or system>"
+          type: data-product       # data-product | report | api | ml-model | dashboard
+          id: "urn:businessdomain:nova-banka:<domain>:<name>"
+          description: "<How this downstream system uses the product>"
+
+    # KO rules — critical gates; failure blocks processing
+    rules_ko:
+      - "<KO rule 1 — e.g. record_id must be a valid UUID v4>"
+      - "<KO rule 2 — e.g. business_date must not be in the future>"
+
+    # Retention — for Dawiso governance card
+    retention:
+      period: "<e.g. 36 months>"
+      rationale: "<Business or regulatory rationale — cite regulation if applicable>"
+
+    # Access channels — appears in Dawiso delivery section
+    access_channels:
+      - "<Channel 1, e.g. Nova Banka Internal Data Catalog>"
+      - "<Channel 2, e.g. Databricks SQL Warehouse>"
+
+  # ──────────────────────────────────────────────────────────
+  # (B) DAWISO BUSINESS GLOSSARY ENTRY  (FIBO-aligned)
+  # Maps to: Dawiso > Business Glossary > [New Term]
+  # Naming: [Domain] [FIBO Class Name] : [Business Term Name]
+  # ──────────────────────────────────────────────────────────
+  glossary_entry:
+
+    # Term name = [Domain] [Business Term]
+    # e.g. "Retail Sales Customer", "Accounting GL Account", "Credit Risk Credit Memo"
+    term: "<Domain> <Business Term>"
+
+    # One clear English sentence — the business essence, not technical implementation
+    # Avoid: SQL / API / Table / ETL / pipeline
+    definition: "<One English sentence describing what this concept means to the business.>"
+
+    # FIBO alignment
+    # ─────────────────────────────────────────────────────
+    # FIBO alignment reference table:
+    #   Company / Legal Entity   → fibo-be-le-lp:LegalEntity
+    #   Customer / Party         → fibo-fnd-pty-pty:Party
+    #   Account                  → fibo-fbc-pas-caa:Account
+    #   Account Balance          → fibo-fbc-pas-caa:AccountBalance
+    #   Market Rate              → fibo-fnd-acc-cur:MarketRate
+    #   Credit Memo / Application→ fibo-fbc-da-da:LoanApplication
+    #   Collateral               → fibo-fbc-da-da:Collateral
+    #   Risk Score / Rating      → fibo-fnd-arr-asmt:RatingScore
+    #   GL Account               → schema:FinancialProduct (no FIBO exact match)
+    #   Investment               → fibo-sec-sec-lst:ListedSecurity (nearest)
+    #   ESG Risk                 → fibo-fnd-arr-asmt:Assessment (nearest)
+    #   KPI / Metric             → fibo-fnd-gao-obj:BusinessObjective (nearest)
+    # ─────────────────────────────────────────────────────
+    fibo_class: "<fibo-module:ClassName>"
+    fibo_uri: "<https://spec.edmcouncil.org/fibo/ontology/...>"
+
+    # Domain from controlled vocabulary (same as data_product.domain)
+    domain: <Domain>
+
+    # Dawiso glossary lifecycle status
+    dawiso_status: draft       # draft | in_review | approved | published
+
+    # Steward — person responsible for definition in Dawiso
+    steward: "<Full Name — email@nova-banka.cz>"
+
+    # Synonyms — Czech and English variants that auto-link in Dawiso
+    # Ensures Czech source terms in contracts map to approved English term
+    synonyms:
+      - "<Czech synonym, e.g. Zákazník>"
+      - "<English variant, e.g. Client>"
+
+    # Acronyms shown in Dawiso term card
+    acronyms:
+      - "<Acronym, e.g. GL, KPI, CBS>"
+
+    # Capability Map — Level 2 or 3 name from Nova Banka Capability Map
+    # Used for Knowledge Graph relationship in Dawiso
+    related_capability: "<Capability name, e.g. Credit Underwriting>"
+
+    # Knowledge Graph triple — published to Dawiso and ontology layer
+    # Format: "<Term> --(relationship)--> <Target>"
+    knowledge_graph_triple: "<Business Term> --(is_governed_by)--> <Domain Capability>"
+
+    # Related glossary terms — link to other Dawiso terms by URN or name
+    related_terms:
+      - "<Related Term 1>"
+      - "<Related Term 2>"

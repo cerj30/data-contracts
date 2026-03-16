@@ -13,8 +13,9 @@ Tento dokument je určen všem členům týmů, kteří budou přispívat do rep
 5. [Jak vytvořit Pull Request](#5-jak-vytvořit-pull-request)
 6. [Jak schválit Pull Request](#6-jak-schválit-pull-request)
 7. [Pravidla repozitáře](#7-pravidla-repozitáře)
-8. [Ukázka Data Contractu v YAML](#8-ukázka-data-contractu-v-yaml)
-9. [Časté chyby a jak je opravit](#9-časté-chyby-a-jak-je-opravit)
+8. [Jak vytvořit Data Contract pomocí AI (doporučený postup)](#8-jak-vytvořit-data-contract-pomocí-ai-doporučený-postup)
+9. [Ukázka Data Contractu v YAML](#9-ukázka-data-contractu-v-yaml)
+10. [Časté chyby a jak je opravit](#10-časté-chyby-a-jak-je-opravit)
 
 ---
 
@@ -163,55 +164,185 @@ Pokud jsi byl označen jako reviewer:
 
 ---
 
-## 8. Ukázka Data Contractu v YAML
+## 8. Jak vytvořit Data Contract pomocí AI (doporučený postup)
 
-Níže je ukázka kompletního Data Contractu. Zkopíruj ho, ulož jako `datacontract.yml` do složky svého týmu a vyplň hodnoty pro váš datový produkt.
+Toto je **nejjednodušší způsob**, jak vytvořit Data Contract. Místo ručního vyplňování šablony použiješ AI asistenta (Claude nebo jiný).
+
+### Přehled workflow
+
+```
+Tvůj popis datového produktu (česky nebo anglicky)
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  KROK 1 — AI vygeneruje celý YAML soubor                    │
+│  Použij: _template/prompt_contract_generator.md             │
+│  Výsledek: hotový .yml soubor připravený ke commitu         │
+└─────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  KROK 2 — Zkontroluj a nahraj soubor do svého team folderu  │
+│  Pojmenuj soubor podle Generated Name v kebab-case:         │
+│  např. customer-service-interaction-performance.yml         │
+└─────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  KROK 3 — Vytvoř Pull Request                               │
+│  CI validátor automaticky zkontroluje soubor                │
+│  Po schválení: kontrakt se mergne do main                   │
+└─────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  KROK 4 — Publikace do Dawiso                               │
+│  Sekce x-dawiso v souboru obsahuje vše potřebné:            │
+│  • Data Product karta (název, domain, vlastník, lineage)    │
+│  • Business Glossary záznam (FIBO třída, definice, synonyma)│
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Co AI vygeneruje automaticky
+
+Z tvého krátkého popisu AI:
+
+| Co AI udělá | Jak |
+|-------------|-----|
+| Vybere správný název | Pravidlo `[Domain] [Concept] [Context] [Suffix]` |
+| Přeloží české pojmy | Povinný překladový slovník |
+| Zvolí Product Type | EVENT / STATE / AGGREGATION |
+| Vyplní FIBO třídu | Alignment na finanční ontologii |
+| Vytvoří Dawiso Data Product | Sekce `x-dawiso.data_product` |
+| Vytvoří Dawiso Glossary záznam | Sekce `x-dawiso.glossary_entry` |
+| Navrhne schema tabulky | Standardní pole + business pole z popisu |
+| Nastaví quality rules | Základní pravidla vždy, doménová dle kontextu |
+| Vyplní SLA | Z popisu nebo defaulty (99.5%, D+1, 36 měsíců) |
+
+### Jak použít AI prompt
+
+**Krok 1:** Otevři soubor [`_template/prompt_contract_generator.md`](_template/prompt_contract_generator.md)
+
+**Krok 2:** Zkopíruj celý obsah souboru a vlož ho do Claude (claude.ai)
+
+**Krok 3:** Na konec promptu doplň odpovědi na tyto otázky (česky nebo anglicky):
+
+```
+[TEAM NAME / NUMBER]:         Tým 3 – Customer Service
+[DOMAIN / BUSINESS AREA]:     Zákaznický servis, call centrum
+[CONTACT PERSON + EMAIL]:     Jana Nováková, jana.novakova@nova-banka.cz
+[CO PRODUKT OBSAHUJE]:        Záznamy o interakcích zákazníků – hovory,
+                              chaty, emaily. Každý řádek = jedna interakce.
+[KDO TO BUDE POUŽÍVAT]:       Call centrum, CRM systém, management CS
+[ODKUD DATA POCHÁZEJÍ]:       CRM systém, telefonní ústředna
+[KLÍČOVÁ DATOVÁ POLE]:        ID zákazníka, typ kanálu, délka interakce,
+                              výsledek, datum, agent ID
+[KVALITATIVNÍ POŽADAVKY]:     Délka interakce musí být > 0
+[DATA LATENCY]:               D+1
+[RETENTION]:                  36 měsíců
+```
+
+**Krok 4:** Claude vrátí hotový YAML soubor. Zkopíruj ho do složky svého týmu.
+
+### Příklad vstupu a výstupu
+
+**Vstup (30 sekund práce):**
+```
+[TEAM]: Tým 3
+[DOMAIN]: zákaznický servis
+[CO]: Záznamy o interakcích zákazníků s bankou (hovory, chaty)
+[KDO POUŽÍVÁ]: Call centrum, CRM
+[ODKUD]: CRM systém, telefonní ústředna
+[POLE]: customer_id, channel_type, duration_seconds, outcome, agent_id
+[LATENCY]: D+1
+```
+
+**Výstup (AI vygeneruje):**
+- Název: `Customer Service Interaction History`
+- Soubor: `customer-service-interaction-history.yml`
+- FIBO: `fibo-fnd-pty-pty:Party`
+- Dawiso Data Product + Glossary entry — vše vyplněno
+
+> **Tip:** Čím více informací do vstupu napíšeš (pole, zdroje, use cases),
+> tím méně budeš muset výstup ručně doplňovat.
+
+---
+
+## 9. Ukázka Data Contractu v YAML
+
+> **Kompletní šablona se všemi sekcemi a komentáři je uložena v:**
+> [`_template/datacontract_template.yml`](_template/datacontract_template.yml)
+>
+> Zkopíruj tento soubor do složky svého týmu, přejmenuj ho a vyplň hodnoty.
+
+### Konvence pojmenování (Naming Convention)
+
+Název data produktu se řídí strukturou: **[Domain] [Concept] [Context] [Suffix]**
+
+| Složka | Popis | Příklady |
+|--------|-------|---------|
+| **Domain** | Obchodní doména (kontrolovaný slovník) | `Retail Sales` · `Customer Service` · `Accounting` · `Credit Risk` · `ESG Risk` · `Investment` · `Strategy` |
+| **Concept** | Hlavní business entita (podstatné jméno) | `Customer` · `Account` · `Credit Memo` · `GL Account` · `KPI` |
+| **Context** | Volitelné upřesnění (jen pokud je nutné odlišení) | `Acquisition` · `Underwriting` · `Energy` |
+| **Suffix** | Typ produktu (EVENT / STATE / AGGREGATION) | EVENT → `History` `Log` `Events` · STATE → `Profile` `Snapshot` `Balances` · AGGREGATION → `Aggregation` `Performance` `Income` |
+
+**Příklady platných názvů:**
+```
+Retail Sales Customer Acquisition History     (5 slov ✓)
+Customer Service Interaction Performance      (4 slova ✓)
+Accounting GL Account Balances                (4 slova ✓)
+Credit Risk Credit Memo History               (5 slov ✓)
+ESG Risk Building Energy Profile              (5 slov ✓)
+Strategy KPI Aggregation                      (3 slova ✓)
+```
+
+---
+
+### Minimální příklad (Strategy KPI Aggregation)
 
 ```yaml
-# ============================================================
-# DATA CONTRACT - UKÁZKA / ŠABLONA
-# ============================================================
 dataContractSpecification: 1.1.0
 
-# Unikátní identifikátor data produktu
-id: urn:businessdomain:nova-banka:strategy:monthly-kpi-report
+id: urn:businessdomain:nova-banka:strategy:kpi-aggregation
 
 info:
-  title: DP_STRATEGY_MONTHLY_KPI          # Název data produktu (velká písmena)
-  name: Strategy Monthly KPI Report        # Čitelný název
-  maturity_score: 60%                      # Vyspělost produktu (0-100%)
-  version: 1.0.0                           # Verze ve formátu major.minor.patch
-  status: in development                   # Možnosti: draft / in development / active / deprecated
+  title: DP_STRATEGY_KPI_AGGREGATION
+  name: Strategy KPI Aggregation
+  product_type: AGGREGATION
+  maturity_score: 60%
+  version: 1.0.0
+  status: in development
 
   description: |
-    Data produkt obsahuje měsíční KPI reporty pro tým Strategie.
-    Zahrnuje finanční ukazatele, výkonnostní metriky a strategické cíle banky.
-    Data latency: D + 1 (data jsou dostupná den po zpracování)
+    Data product aggregating monthly strategic KPIs for board-level performance management.
+    Data latency: D+1
+
+    Business Entity:  KPI
+    Business Purpose: Provide pre-computed KPI roll-ups for strategic decision-making.
+    Consumers:        Strategy team, Board reporting
+    Data Sources:     Core Banking System, Finance GL
 
     Filter Rules:
-    * Pouze záznamy s platným business_date
-    * Region musí být CZ nebo SK
+    * Only records with valid business_date
+    * Region must be CZ or SK
 
     Use Cases:
-    * UC1 - Sledování měsíčního plnění strategických KPI
-    * UC2 - Porovnání výkonu napříč obchodními jednotkami
+    * UC1 - Monthly strategic KPI tracking
+    * UC2 - Cross-business-unit performance comparison
 
   owner: Nova Banka \ Team6 \ Strategy
   contact:
     name: Jan Novák
     email: jan.novak@nova-banka.cz
 
-# ============================================================
-# SERVERY - kde jsou data fyzicky uložena
-# ============================================================
 servers:
   PRODUCTION:
-    type: databricks                        # Typ databáze
+    type: databricks
     host: nova-banka-prod.cloud.databricks.com
     environment: production
     catalog: datamesh-nova-banka-prod
     schema: strategy-prod
-    table: dp_strategy_monthly_kpi
+    table: dp_strategy_kpi_aggregation
 
   DEVELOPMENT:
     type: databricks
@@ -219,104 +350,101 @@ servers:
     environment: development
     catalog: datamesh-nova-banka-dev
     schema: strategy-dev
-    table: dp_strategy_monthly_kpi
+    table: dp_strategy_kpi_aggregation
 
-# ============================================================
-# SCHEMA - struktura dat (tabulky a sloupce)
-# ============================================================
 schema:
-  - name: dp_strategy_monthly_kpi
-    description: Měsíční KPI tabulka pro strategické reportování
+  - name: dp_strategy_kpi_aggregation
+    description: Monthly KPI aggregation table for strategic reporting
     fields:
 
       - name: record_id
         type: string
-        description: Unikátní identifikátor záznamu (UUID)
+        description: Unique record identifier (UUID)
         required: true
         unique: true
         example: "550e8400-e29b-41d4-a716-446655440000"
 
       - name: business_date
         type: date
-        description: Datum záznamu ve formátu YYYY-MM-DD
+        description: Business date of the record (YYYY-MM-DD)
         required: true
         example: "2024-01-31"
 
       - name: region
         type: string
-        description: Region - povolené hodnoty CZ nebo SK
+        description: Geographic region — allowed values CZ or SK
         required: true
         enum: [CZ, SK]
         example: "CZ"
 
       - name: kpi_name
         type: string
-        description: Název KPI ukazatele
+        description: KPI indicator name
         required: true
         example: "Net_Interest_Margin"
 
       - name: kpi_value
         type: decimal
-        description: Hodnota KPI ukazatele
+        description: KPI indicator value
         required: true
         example: 2.35
 
       - name: kpi_target
         type: decimal
-        description: Cílová hodnota KPI
+        description: Target value for the KPI
         required: false
         example: 2.50
 
       - name: currency
         type: string
-        description: Měna - ISO 4217 kód
+        description: Currency code (ISO 4217)
         required: false
         example: "CZK"
 
       - name: created_at
         type: timestamp
-        description: Čas vytvoření záznamu
+        description: Record creation timestamp (UTC)
         required: true
         example: "2024-01-31T08:00:00Z"
 
-# ============================================================
-# KVALITA DAT - pravidla pro validaci
-# ============================================================
+      - name: updated_at
+        type: timestamp
+        description: Record last update timestamp (UTC)
+        required: true
+        example: "2024-01-31T08:00:00Z"
+
 quality:
   - rule: not_null
     field: record_id
-    description: ID záznamu nesmí být prázdné
-
-  - rule: not_null
-    field: business_date
-    description: Datum záznamu nesmí být prázdné
+    description: Record ID must not be empty
 
   - rule: unique
     field: record_id
-    description: Každý záznam musí mít unikátní ID
+    description: Every record must have a unique ID
+
+  - rule: not_null
+    field: business_date
+    description: Business date must not be empty
 
   - rule: accepted_values
     field: region
     values: [CZ, SK]
-    description: Region musí být CZ nebo SK
+    description: Region must be CZ or SK
 
   - rule: not_null
     field: kpi_value
-    description: Hodnota KPI nesmí být prázdná
+    description: KPI value must not be empty
 
-# ============================================================
-# SLA - dohoda o úrovni služeb
-# ============================================================
 sla:
-  availability: 99.5%                      # Dostupnost dat
-  data_latency: D+1                        # Zpoždění dat
-  retention_period: 36 months             # Jak dlouho jsou data uchovávána
+  availability: 99.5%
+  data_latency: D+1
+  retention_period: 36 months
   support_contact: jan.novak@nova-banka.cz
 ```
 
 ---
 
-## 9. Časté chyby a jak je opravit
+## 10. Časté chyby a jak je opravit
 
 ### ❌ "Merging is blocked"
 **Příčina:** Pull Request nemá požadované schválení.
@@ -333,6 +461,15 @@ sla:
 ### ❌ YAML soubor má chybu ve formátování
 **Příčina:** YAML je citlivý na odsazení (mezery).
 **Řešení:** Použij online validátor na [yamllint.com](https://www.yamllint.com) před nahráním.
+
+---
+
+## 💬 Kde najdeš šablony a prompty
+
+| Soubor | K čemu slouží |
+|--------|---------------|
+| [`_template/datacontract_template.yml`](_template/datacontract_template.yml) | Kompletní šablona se všemi sekcemi a komentáři |
+| [`_template/prompt_contract_generator.md`](_template/prompt_contract_generator.md) | AI prompt — vygeneruje celý YAML z krátkého popisu |
 
 ---
 
