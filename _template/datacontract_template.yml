@@ -1,5 +1,5 @@
 # ============================================================
-# DATA CONTRACT TEMPLATE v3.0
+# DATA CONTRACT TEMPLATE v3.2 (Compliance, DQ & Audit Edition)
 # Nova Banka — Data Mesh Repository
 # Spec: datacontract.com v1.1.0
 # Dawiso: Data Product + Business Glossary ready
@@ -25,7 +25,7 @@
 # │ PRODUCT TYPE → SUFFIX:                                  │
 # │   EVENT       → History | Log | Events | Transactions   │
 # │   STATE       → Profile | Status | Snapshot | Balances  │
-# │                  Performance                            │
+# │                 Performance                             │
 # │   AGGREGATION → Income | Aggregation | Performance      │
 # │                                                         │
 # │ VALID EXAMPLES (4–5 words preferred, max 6):            │
@@ -48,6 +48,7 @@
 # │  6. Concept is a concrete business noun?                │
 # │  7. Total ≤ 6 words, ideally 4–5?                       │
 # │  8. Domain by consumption, not by team origin?          │
+# │  9. PII data correctly tagged in x-compliance?          │
 # └─────────────────────────────────────────────────────────┘
 #
 # ┌─────────────────────────────────────────────────────────┐
@@ -66,9 +67,9 @@
 # │                          │   .dawiso_status             │
 # │ Tags                     │ x-dawiso.data_product.tags   │
 # │ SLA                      │ sla                          │
-# │ Lineage (upstream)       │ x-dawiso.data_product        │
+# │ Input Contracts          │ x-dawiso.data_product        │
 # │                          │   .lineage.upstream          │
-# │ Lineage (downstream)     │ x-dawiso.data_product        │
+# │ Output Contracts         │ x-dawiso.data_product        │
 # │                          │   .lineage.downstream        │
 # │ Data Contract (link)     │ id (URN)                     │
 # ├──────────────────────────┼──────────────────────────────┤
@@ -113,19 +114,13 @@ info:
   name: <Domain> <Concept> <Context> <Suffix>
 
   # EVENT | STATE | AGGREGATION  (drives suffix choice above)
-  product_type: EVENT
+  product_type: <EVENT | STATE | AGGREGATION>
 
-  maturity_score: 0%     # 0–100%
+  maturity_score: 30%
 
-  version: 0.1.0         # major.minor.patch
-                          # draft/in development → 0.x.x | active → 1.x.x
+  version: 0.1.0         # draft/in development → 0.x.x | active → 1.x.x
 
   status: draft          # draft | in development | active | deprecated
-                          # Dawiso mapping:
-                          #   draft          → design
-                          #   in development → in_development
-                          #   active         → published
-                          #   deprecated     → obsolete
 
   description: |
     <Business purpose paragraph in English.>
@@ -145,6 +140,14 @@ info:
     * UC1 - <Primary use case>
     * UC2 - <Secondary use case>
 
+  # ==========================================================
+  # REGULATORY CONTEXT (Audit & Governance)
+  # ==========================================================
+  x-regulatory:
+    gdpr_relevant: <true/false>
+    critical_data_element: <true/false>
+    regulatory_framework: "<Assigned Framework, e.g., GDPR, BCBS 239, IFRS 9, or None>"
+
   owner: Nova Banka \ <TeamN> \ <Domain>
   contact:
     name: <Full Name>
@@ -160,7 +163,7 @@ servers:
     environment: production
     catalog: datamesh-nova-banka-prod
     schema: <domain-kebab>-prod        # e.g. retail-sales-prod
-    table: dp_<domain>_<concept>_<suffix>  # lowercase, underscores
+    table: dp_<domain>_<concept>_<suffix>
 
   DEVELOPMENT:
     type: databricks
@@ -171,7 +174,7 @@ servers:
     table: dp_<domain>_<concept>_<suffix>
 
 # ============================================================
-# SCHEMA
+# SCHEMA (With Compliance Tags)
 # Valid field types:
 #   string | integer | decimal | float | double | boolean |
 #   date | timestamp | array | object | number | bigint | long
@@ -188,12 +191,18 @@ schema:
         required: true
         unique: true
         example: "550e8400-e29b-41d4-a716-446655440000"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: business_date
         type: date
         description: Business processing date (YYYY-MM-DD)
         required: true
         example: "2024-01-31"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: region
         type: string
@@ -201,31 +210,47 @@ schema:
         required: true
         enum: [CZ, SK]
         example: "CZ"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: created_at
         type: timestamp
         description: Record creation timestamp (UTC)
         required: true
         example: "2024-01-31T08:00:00Z"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: updated_at
         type: timestamp
         description: Record last update timestamp (UTC)
         required: true
         example: "2024-01-31T08:00:00Z"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       # ── Business fields — replace / extend ───────────────
-      - name: <field_name>
+      - name: <field_name_internal>
         type: string
-        description: <Field description in English — include unit if numeric>
+        description: <Non-sensitive field description>
         required: true
         example: "<example_value>"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
-      - name: <field_name_2>
-        type: decimal
-        description: <Numeric field — specify unit and scale>
-        required: false
-        example: 0.00
+      - name: <field_name_pii>
+        type: string
+        description: <Sensitive field description, e.g. email, name>
+        required: true
+        example: "<example_value>"
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: <Contractual/Consent/Legal Obligation>
 
 # ============================================================
 # DATA SOURCES  (upstream lineage)
@@ -236,11 +261,6 @@ sources:
     description: <What data this source provides>
     freshness: <Daily EOD | D+1 | Real-time | Per request>
     owner: <Team or system owner>
-
-  # - name: <External Registry Name>
-  #   type: external
-  #   description: <What it provides>
-  #   freshness: <Cadence>
 
 # ============================================================
 # DATA QUALITY
@@ -265,24 +285,19 @@ quality:
     values: [CZ, SK]
     description: Region must be CZ or SK
 
-  # - rule: regex
-  #   field: <field_name>
-  #   pattern: "^<pattern>$"
-  #   description: <field> must match the pattern
-
-  # - rule: range
-  #   field: <numeric_field>
-  #   min: 0
-  #   max: 100
-  #   description: <field> must be within range
+  # ── Distribution & Volume check (Anomaly Detection) ──
+  - rule: row_count
+    min: <estimated_min>
+    max: <estimated_max>
+    description: "Detects data distribution anomalies (volume drop/spike)"
 
 # ============================================================
 # SLA
 # ============================================================
 sla:
-  availability: 99.5%          # 99.0% non-critical | 99.5% standard | 99.9% critical
-  data_latency: D+1            # D+1 | T+1 | near_real_time | per request
-  retention_period: 36 months  # 36 default | 60 financial | 84 regulatory
+  availability: 99.5%
+  data_latency: <latency>
+  retention_period: 36 months
   support_contact: <email@nova-banka.cz>
 
 # ============================================================
@@ -295,7 +310,7 @@ terms:
   limitations: |
     <Restrictions, access controls, prohibited uses.>
     Data must not be used outside approved use cases without Data Product Owner consent.
-  noticePeriod: "P3M"    # ISO 8601 — 3-month deprecation notice (default)
+  noticePeriod: "P3M"
 
 # ============================================================
 # SERVICE LEVELS  (detailed)
@@ -324,7 +339,7 @@ servicelevels:
 #   STEP 2 — Business Glossary entry  (done by Data Steward)
 #     Dawiso > Business Glossary > + New Term
 #     Copy: term, definition, FIBO class, domain, steward,
-#           synonyms, related capability
+#           synonyms, acronyms, related capability
 #
 # ============================================================
 x-dawiso:
@@ -335,7 +350,6 @@ x-dawiso:
   # ──────────────────────────────────────────────────────────
   data_product:
 
-    # Workflow status
     # Contract status  → Dawiso status
     # draft            → design
     # in development   → in_development
