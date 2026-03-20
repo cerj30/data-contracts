@@ -172,6 +172,7 @@ x-dawiso:
     domain: <Domain>
     business_owner: <role>
     product_owner: <name - email>
+    data_steward: <name - email>
     tags:
       - <domain-tag>
       - <product-type-tag>
@@ -181,24 +182,33 @@ x-dawiso:
       upstream:
         - name: <source>
           type: internal-system
+          description: "<What this source contributes>"
       downstream:
         - name: <consuming system>
-          type: report
+          type: data-product
+          description: "<How this downstream system uses the product>"
     rules_ko:
       - "record_id must be a valid UUID v4"
       - "Volume must be within expected range"
+    retention:
+      period: "<e.g. 36 months>"
+      rationale: "<Business or regulatory rationale>"
 
   glossary_entry:
     term: "<Domain> <Business Term>"
-    definition: "<One English sentence.>"
+    definition: "<One English sentence describing what this concept means to the business.>"
     fibo_class: "<fibo-module:ClassName>"
     fibo_uri: "<https://spec.edmcouncil.org/fibo/ontology/...>"
     domain: <Domain>
+    dawiso_status: draft
     steward: <name - email>
     synonyms:
       - <Czech synonym>
+    acronyms:
+      - <Acronym if applicable>
     related_capability: "<Capability name>"
-    knowledge_graph_triple: "<Term> --(is_governed_by)--> <Capability>"
+    related_terms:
+      - "<Related Term 1>"
 
 ════════════════════════════════════════════════════════════════
 ── INPUT (paste your data product description below) ──────────

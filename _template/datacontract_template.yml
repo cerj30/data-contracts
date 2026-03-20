@@ -90,8 +90,8 @@
 # │                          │   .synonyms                  │
 # │ Related Capability       │ x-dawiso.glossary_entry      │
 # │                          │   .related_capability        │
-# │ Knowledge Graph Triple   │ x-dawiso.glossary_entry      │
-# │                          │   .knowledge_graph_triple    │
+# │ Related Terms            │ x-dawiso.glossary_entry      │
+# │                          │   .related_terms             │
 # └──────────────────────────┴──────────────────────────────┘
 # ============================================================
 

@@ -196,10 +196,17 @@ Tvůj popis datového produktu (česky nebo anglicky)
         │
         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  KROK 4 — Publikace do Dawiso                               │
-│  Sekce x-dawiso v souboru obsahuje vše potřebné:            │
-│  • Data Product karta (název, domain, vlastník, lineage)    │
-│  • Business Glossary záznam (FIBO třída, definice, synonyma)│
+│  KROK 4 — Ruční vložení do Dawiso (žádná API integrace)     │
+│                                                             │
+│  STEP 1 — Data Product karta                                │
+│    Dawiso > Data Catalog > Data Products > + New Product    │
+│    Zkopíruj z x-dawiso.data_product: název, domain,        │
+│    vlastníci, status, tagy, lineage, KO rules, retention    │
+│                                                             │
+│  STEP 2 — Business Glossary záznam (provede Data Steward)   │
+│    Dawiso > Business Glossary > + New Term                  │
+│    Zkopíruj z x-dawiso.glossary_entry: term, definition,   │
+│    FIBO třída, domain, steward, synonyma, capability        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -212,11 +219,12 @@ Z tvého krátkého popisu AI:
 | Vybere správný název | Pravidlo `[Domain] [Concept] [Context] [Suffix]` |
 | Přeloží české pojmy | Povinný překladový slovník |
 | Zvolí Product Type | EVENT / STATE / AGGREGATION |
+| Označí PII pole + sensitivity | `x-compliance` na každém poli schématu |
+| Přiřadí Regulatory Framework | GDPR / BCBS 239 / IFRS 9 / None dle povahy dat |
 | Vyplní FIBO třídu | Alignment na finanční ontologii |
-| Vytvoří Dawiso Data Product | Sekce `x-dawiso.data_product` |
-| Vytvoří Dawiso Glossary záznam | Sekce `x-dawiso.glossary_entry` |
+| Připraví metadata pro Dawiso | Sekce `x-dawiso` — pro ruční vložení do UI |
 | Navrhne schema tabulky | Standardní pole + business pole z popisu |
-| Nastaví quality rules | Základní pravidla vždy, doménová dle kontextu |
+| Nastaví quality rules | Základní pravidla + row_count pro detekci anomálií |
 | Vyplní SLA | Z popisu nebo defaulty (99.5%, D+1, 36 měsíců) |
 
 ### Jak použít AI prompt
@@ -330,6 +338,11 @@ info:
     * UC1 - Monthly strategic KPI tracking
     * UC2 - Cross-business-unit performance comparison
 
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+
   owner: Nova Banka \ Team6 \ Strategy
   contact:
     name: Jan Novák
@@ -363,12 +376,18 @@ schema:
         required: true
         unique: true
         example: "550e8400-e29b-41d4-a716-446655440000"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: business_date
         type: date
         description: Business date of the record (YYYY-MM-DD)
         required: true
         example: "2024-01-31"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: region
         type: string
@@ -376,42 +395,63 @@ schema:
         required: true
         enum: [CZ, SK]
         example: "CZ"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: kpi_name
         type: string
         description: KPI indicator name
         required: true
         example: "Net_Interest_Margin"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: kpi_value
         type: decimal
         description: KPI indicator value
         required: true
         example: 2.35
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: kpi_target
         type: decimal
         description: Target value for the KPI
         required: false
         example: 2.50
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: currency
         type: string
         description: Currency code (ISO 4217)
         required: false
         example: "CZK"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: created_at
         type: timestamp
         description: Record creation timestamp (UTC)
         required: true
         example: "2024-01-31T08:00:00Z"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
       - name: updated_at
         type: timestamp
         description: Record last update timestamp (UTC)
         required: true
         example: "2024-01-31T08:00:00Z"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
 
 quality:
   - rule: not_null
@@ -434,6 +474,11 @@ quality:
   - rule: not_null
     field: kpi_value
     description: KPI value must not be empty
+
+  - rule: row_count
+    min: 100
+    max: 10000
+    description: Detects data distribution anomalies (volume drop/spike)
 
 sla:
   availability: 99.5%
