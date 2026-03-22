@@ -5,6 +5,7 @@ info:
   name: Strategy Market Rate Snapshot
   version: 1.0.0
   status: in development
+  product_type: STATE
   description: |
     Datový produkt obsahující přehled tržních úrokových sazeb a konkurenčních nabídek.
     Slouží k monitoringu trhu a podpoře rozhodování při změnách cenotvorby banky.
@@ -17,6 +18,11 @@ info:
   contact:
     name: Strategy Team
     email: strategy@nova-banka.cz
+
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: false
+    regulatory_framework: "None"
     
 servers:
   PRODUCTION:
@@ -127,6 +133,11 @@ quality:
   - rule: not_null
     field: source
     description: Zdroj sazby nesmí být prázdný
+
+  - rule: row_count
+    min: 1
+    max: 100000
+    description: "Detects data distribution anomalies (volume drop/spike)"
 
 sla:
   availability: 99.5%
