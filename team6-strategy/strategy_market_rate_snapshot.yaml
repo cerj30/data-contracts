@@ -1,25 +1,23 @@
 dataContractSpecification: 1.1.0
 id: urn:businessdomain:nova-banka:strategy:strategy-kpi-aggregation
 info:
-  title: DP_STRATEGY_KPI_AGGREGATION
-  name: Strategy KPI Aggregation
+  title: DP_STRATEGY_MARKET_RATE_SNAPSHOT
+  name: Strategy Market Rate Snapshot
   version: 1.0.0
   status: in development
-  description: 'Agregovaný datový produkt obsahující klíčové strategické metriky banky.
-
-    Měření ambice anticipativního bankovnictví.
+  description:
+    Datový produkt obsahující přehled tržních úrokových sazeb a konkurenčních nabídek.
+    Slouží k monitoringu trhu a podpoře rozhodování při změnách cenotvorby banky.
 
     Use Cases:
+    * UC1 - Monitoring oficiálních sazeb ČNB a jejich porovnání s nabídkami konkurence
+    * UC2 - Podpora boardu při reakci na náhlé změny úrokových sazeb na trhu
 
-    * UC1 - Strategický reporting pro C-level
-
-    * UC2 - Sledování NPS a automatizace
-
-    '
   owner: Nova Banka \ Strategy \ Tým 6
   contact:
     name: Strategy Team
     email: strategy@nova-banka.cz
+    
 servers:
   PRODUCTION:
     type: databricks
@@ -27,63 +25,109 @@ servers:
     environment: production
     catalog: vse_banka
     schema: strategie
-    table: dp_strategy_kpi_aggregation
+    table: dp_strategy_market_rate_snapshot
   DEVELOPMENT:
     type: databricks
     host: nova-banka-dev.cloud.databricks.com
     environment: development
     catalog: vse_banka
     schema: strategie
-    table: dp_strategy_kpi_aggregation
+    table: dp_strategy_market_rate_snapshot
+    
 schema:
-- name: dp_strategy_kpi_aggregation
-  description: Klíčové strategické metriky banky
-  fields:
-  - name: report_date
-    type: date
-    description: Referenční datum reportingu
-    required: true
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: nps_score
-    type: decimal
-    description: Net Promoter Score
-    required: false
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: cost_to_serve
-    type: decimal
-    description: Průměrné náklady na obsluhu klienta
-    required: false
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: automated_resolution_rate
-    type: decimal
-    description: Podíl požadavků vyřešených AI bez zásahu člověka
-    required: false
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: created_at
-    type: timestamp
-    description: Čas vygenerování záznamu
-    required: true
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
+  - name: dp_strategy_market_rate_snapshot
+    description: Přehled tržních sazeb ČNB a konkurenčních nabídek k danému datu
+    fields:
+
+      - name: record_id
+        type: string
+        description: Unikátní identifikátor záznamu (UUID)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: snapshot_date
+        type: date
+        description: Datum snímku tržních sazeb (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: source
+        type: string
+        description: Zdroj sazby — ČNB, ČSÚ nebo název konkurenční banky
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: product_type
+        type: string
+        description: Typ produktu (spořicí účet, hypotéka, spotřebitelský úvěr atp.)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: rate_value
+        type: decimal
+        description: Hodnota úrokové sazby v procentech p.a.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: is_official
+        type: boolean
+        description: True pokud jde o oficální sazbu ČNB, False pokud jde o konkurenční nabídku
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: created_at
+        type: timestamp
+        description: Čas vytvoření záznamu
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
 quality:
-- rule: not_null
-  field: report_date
-  description: Datum reportingu nesmí být prázdné
-- rule: range
-  field: nps_score
-  description: NPS musí být v intervalu -100 až 100
-- rule: range
-  field: automated_resolution_rate
-  description: ARR musí být v intervalu 0 až 1
+  - rule: not_null
+    field: record_id
+    description: ID záznamu nesmí být prázdné
+
+  - rule: unique
+    field: record_id
+    description: Každý záznam musí mít unikátní ID
+
+  - rule: not_null
+    field: snapshot_date
+    description: Datum snímku nesmí být prázdné
+
+  - rule: not_null
+    field: rate_value
+    description: Hodnota sazby nesmí být prázdná
+
+  - rule: range
+    field: rate_value
+    min: -5
+    max: 50
+    description: Úroková sazba musí být v realistickém intervalu -5 až 50 % p.a.
+
+  - rule: accepted_values
+    field: source
+    values: [ČNB, ČSÚ, Česká spořitelna, ČSOB, Komerční banka, Raiffeisenbank, mBank, Air Bank]
+    description: Zdroj musí být ze seznamu sledovaných institucí
+
+  - rule: not_null
+    field: source
+    description: Zdroj sazby nesmí být prázdný
+
 sla:
   availability: 99.5%
   data_latency: D+1
