@@ -5,7 +5,7 @@ info:
   name: Strategy Market Rate Snapshot
   version: 1.0.0
   status: in development
-  description:
+  description: |
     Datový produkt obsahující přehled tržních úrokových sazeb a konkurenčních nabídek.
     Slouží k monitoringu trhu a podpoře rozhodování při změnách cenotvorby banky.
 
