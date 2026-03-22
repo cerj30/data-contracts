@@ -1,0 +1,463 @@
+dataContractSpecification: 1.1.0
+id: urn:nova-banka:team8:investment:peer-benchmark-profile-aggregation:v0.1.0
+info:
+  title: Investment Peer Benchmark Profile Aggregation Data Product
+  name: Investment Peer Benchmark Profile Aggregation
+  product_type: AGGREGATION
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    This data product provides an enriched overview of companies together with the key features
+    used in clustering analysis to determine similarity, and an assigned cluster ID that identifies
+    the market segment each company belongs to. The product is derived from the Investment Company Profile
+    Aggregation data product and is designed to support investment peer benchmarking, sales targeting,
+    and risk management through improved market segmentation.
+    Data latency: Bi-weekly (every 14 days); data is pushed to this product immediately after
+                  the upstream Investment Company Profile Aggregation refresh is processed.
+    Business Entity:  Company / Investment Target
+    Business Purpose: Provide cluster-enriched company profiles for peer benchmarking and
+                      market segmentation, enabling the Sales Department and Risk Management
+                      to identify similar companies and target investment opportunities.
+    Consumers:        Sales Department, Risk Management
+    Data Sources:     Investment Company Profile Aggregation (Team 8 — internal)
+
+  x-regulatory:
+    gdpr_relevant: true
+    critical_data_element: true
+    regulatory_framework: "GDPR"
+
+  owner: Nova Banka \ Team8 \ Investment
+  contact:
+    name: Ondřej Houdek
+    email: houo04@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: investment-prod
+    table: investment_peer_benchmark_profile_aggregation
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: investment-dev
+    table: investment_peer_benchmark_profile_aggregation
+
+schema:
+  - name: investment_peer_benchmark_profile_aggregation
+    description: >
+      Cluster-enriched company profile table derived from the Investment Company Profile Aggregation.
+      Each row represents one company per accounting period, enriched with a cluster_id assigned
+      by the clustering model to indicate the market segment the company belongs to.
+      Deduplication key: ic + obdobi_do (SCD Type 2).
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Critical Identifiers ---
+      - name: ic
+        type: string
+        description: >
+          Company identification number (IČO). Must be exactly 8 numeric characters;
+          left-padded with zeros. Primary business key combined with obdobi_do for
+          SCD Type 2 deduplication.
+        required: true
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Legal Obligation
+
+      - name: nazev_subjektu
+        type: string
+        description: Legal name of the company / subject name.
+        required: false
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+
+      # --- Clustering Output ---
+      - name: cluster_id
+        type: string
+        description: >
+          Market segment identifier assigned by the clustering analysis model.
+          Identifies the peer group / market segment the company belongs to.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Time Anchors ---
+      - name: obdobi_od
+        type: date
+        description: Accounting period start date. Must be a valid parseable date.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: obdobi_do
+        type: date
+        description: >
+          Accounting period end date (accounting year-end). Used as SCD Type 2 key
+          together with ic. Must not be null.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Categorical & Reference Dimensions ---
+      - name: hlavni_nace_kod
+        type: string
+        description: >
+          Primary NACE activity code. Must match the official NACE classification
+          numerical string (validated against NACE_DICTIONARY_REGEX).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: pravni_forma
+        type: string
+        description: Legal form of the company (e.g., a.s., s.r.o.).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: druh_registrace
+        type: string
+        description: Type of company registration.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: kategorie_obratu
+        type: string
+        description: Turnover category band assigned to the company.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: institucionalni_sektor_popis
+        type: string
+        description: Description of the institutional sector classification.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: kategorie_poctu_zamestnancu
+        type: string
+        description: Employee count category band assigned to the company.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Core Financial KPIs (Clustering Features) ---
+      - name: vlastni_kapital
+        type: double
+        description: Total equity (own capital) of the company. Core clustering model input.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: zmena_obrat_abs
+        type: double
+        description: Absolute change in turnover (calculated metric). Core clustering model input.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Balance Sheet & Income Statement (Clustering Features) ---
+      - name: dohadne_ucty_pasivni
+        type: double
+        description: Accrued liabilities (passive accrual accounts).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: dane_a_poplatky
+        type: double
+        description: Taxes and fees expense.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: stat_danove_pohledavky
+        type: double
+        description: State tax receivables.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: azio_a_kapitalove_fondy
+        type: double
+        description: Share premium and capital funds combined.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: kapitalove_fondy
+        type: double
+        description: Capital funds.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: naklady_na_socialni_zabezpeceni_a_zdravotni_pojisteni
+        type: double
+        description: Social security and health insurance costs.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: osobni_naklady
+        type: double
+        description: Total personnel costs.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: nedokoncena_vyroba_a_polotovary
+        type: double
+        description: Work in progress and semi-finished goods inventory.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: zasoby
+        type: double
+        description: Total inventories.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: zbozi
+        type: double
+        description: Merchandise / goods for resale.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: ocenitelna_prava
+        type: double
+        description: Valuable rights (intangible assets — licences, patents).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: software
+        type: double
+        description: Software intangible asset value.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: dlouhodoby_financni_majetek
+        type: double
+        description: Long-term financial assets.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: sluzby
+        type: double
+        description: Services expense.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+quality:
+  # Critical Identifiers (Action on Fail: Route to Quarantine)
+  - rule: not_null
+    field: record_id
+    description: "record_id must be populated."
+
+  - rule: unique
+    field: record_id
+    description: "record_id must be globally unique (UUID v4)."
+
+  - rule: not_null
+    field: ic
+    description: "Rule_ID_01 — Company ID (IČO) must be populated."
+
+  - rule: regex
+    field: ic
+    pattern: "^[0-9]{8}$"
+    description: "Rule_ID_02 — IČO must be exactly 8 numeric characters (left-padded with zeros)."
+
+  # Rule_ID_03 — Deduplication (ic+obdobi_do enforced in ETL; ic unique as proxy rule)
+  - rule: unique
+    field: ic
+    description: "Rule_ID_03 — Each IČO must appear only once per accounting year (dedup enforced in ETL on ic+obdobi_do partition)."
+
+  - rule: not_null
+    field: cluster_id
+    description: "cluster_id must be populated — every company must be assigned to a market segment."
+
+  - rule: not_null
+    field: obdobi_do
+    description: "Accounting period end date must be populated (SCD Type 2 key)."
+
+  # Categorical & Reference Dimensions (Action on Fail: Log to DQ Report)
+  - rule: regex
+    field: hlavni_nace_kod
+    pattern: "^[0-9]{2,6}$"
+    description: "Rule_Cat_01 — Must be a valid NACE classification numerical string."
+
+  # Rule_Cat_02 — format checks for categorical dimensions documented; enforced via type: string in schema
+  - rule: not_null
+    field: pravni_forma
+    description: "Rule_Cat_02 — Legal form completeness check."
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
+  # Rule_Fin_01/02 — Financial columns: type double + required: false in schema enforces numeric type
+  # and permits NULLs. Range guards applied to key clustering features:
+  - rule: range
+    field: vlastni_kapital
+    description: "Rule_Fin_01/02 — Own capital must be numeric; NULLs permitted (Business NULL)."
+  - rule: range
+    field: zmena_obrat_abs
+    description: "Rule_Fin_01/02 — Turnover change must be numeric; NULLs permitted (Business NULL)."
+  - rule: range
+    field: osobni_naklady
+    description: "Rule_Fin_01/02 — Personnel costs must be numeric; NULLs permitted (Business NULL)."
+
+  # Distribution & Volume Check (Mentor requirement)
+  - rule: row_count
+    min: 40000
+    max: 60000
+    description: >
+      Detects data distribution anomalies (volume drop/spike). Estimated range based on
+      the CZ/SK investment target universe across accounting periods, inheriting the
+      volume envelope from the upstream Investment Company Profile Aggregation.
+
+sla:
+  availability: 99.5%
+  data_latency: Bi-weekly (every 14 days); pushed immediately after upstream snapshot refresh
+  retention_period: 60 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Investment
+    business_owner: Investment Banking Lead
+    product_owner: Ondřej Houdek - houo04@vse.cz
+    data_steward: Ondřej Houdek - houo04@vse.cz
+    tags:
+      - investment
+      - aggregation
+      - peer-benchmarking
+      - clustering
+      - market-segmentation
+    classification: "Investment Data Product"
+    data_classification: Confidential
+    lineage:
+      upstream:
+        - name: Investment Company Profile Aggregation (Team 8)
+          type: data-product
+          description: >
+            Primary and sole upstream source. Provides all company financial, categorical,
+            and behavioural attributes. The clustering model is applied on top of this product
+            to generate the cluster_id enrichment.
+      downstream:
+        - name: Sales Department
+          type: internal-system
+          description: >
+            Uses cluster-enriched company profiles to identify peer companies, target
+            similar prospects, and prioritise investment sales outreach by market segment.
+        - name: Risk Management
+          type: internal-system
+          description: >
+            Uses market segmentation and clustering features to improve risk scoring
+            comparability and benchmarking of companies within the same peer group.
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "ic must be exactly 8 numeric characters (left-padded with zeros)"
+      - "ic must not be null"
+      - "cluster_id must not be null — every company must be assigned to a segment"
+      - "Combination of ic + obdobi_do must be unique (one record per company per accounting year)"
+      - "All FINANCIAL_COLUMNS must be castable to Numeric/Double — no text artefacts permitted"
+      - "NULL values in financial columns are permitted (Business NULL); zero-imputation is forbidden"
+      - "Volume must be within expected range (40,000–60,000 rows)"
+    retention:
+      period: "60 months (5 years)"
+      rationale: >
+        Financial and segmentation data supports multi-year trend analysis, model retraining,
+        and audit trails for investment decisions. A 5-year retention horizon aligns with
+        BCBS 239 data lineage requirements and internal investment governance policies.
+
+  glossary_entry:
+    term: "Investment Peer Benchmark Profile"
+    definition: >
+      A cluster-enriched representation of a company that combines key financial and operational
+      attributes with a model-assigned market segment identifier, enabling the identification of
+      peer companies and supporting comparative investment analysis and risk benchmarking.
+    fibo_class: "fibo-be-le-lp:LegalPerson"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/BE/LegalEntities/LegalPersons/LegalPerson"
+    domain: Investment
+    dawiso_status: draft
+    steward: Ondřej Houdek - houo04@vse.cz
+    synonyms:
+      - Profil pro srovnávání investičních cílů
+      - Shlukový profil společnosti
+    acronyms:
+      - IPBP
+    related_capability: "Investment Analysis & Market Segmentation"
+    related_terms:
+      - "Investment Company Profile"
+      - "Clustering Analysis"
+      - "Market Segment"
+      - "Peer Benchmarking"
+      - "Risk Scoring"
