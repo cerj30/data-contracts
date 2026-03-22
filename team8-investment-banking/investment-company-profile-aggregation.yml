@@ -1,0 +1,602 @@
+dataContractSpecification: 1.1.0
+id: urn:nova-banka:team8:investment:company-profile-aggregation:v0.1.0
+info:
+  title: Investment Company Profile Aggregation Data Product
+  name: Investment Company Profile Aggregation
+  product_type: AGGREGATION
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    This data product provides an aggregated table of potential investment targets and companies,
+    combining publicly available external data with internal client data. It covers a broad range of
+    company attributes — from financial statement items and balance sheet metrics to categorical
+    descriptors such as legal form, NACE classification, and employee count category. The product
+    is designed to support investment peer benchmarking, clustering analysis for market segmentation,
+    credit risk assessment, and risk scoring of included companies.
+    Data latency: Bi-weekly refresh (every 2 weeks) for external data sources
+    Business Entity:  Company / Investment Target
+    Business Purpose: Aggregated company profiles for investment analysis, peer benchmarking,
+                      credit risk evaluation, and risk scoring within Nova Banka's Investment domain.
+    Consumers:        Team 8 (Investment Peer Benchmark Profile Aggregation), Team 7 (Credit Risk Credit Memo DP),
+                      Internal risk scoring processes
+    Data Sources:     External data providers (MagnusWeb, Mergermarket, CRIBIS, ORBIS),
+                      Customer Service Customer Profile DP (Team 3 — internal)
+
+  x-regulatory:
+    gdpr_relevant: true
+    critical_data_element: true
+    regulatory_framework: "GDPR"
+
+  owner: Nova Banka \ Team8 \ Investment
+  contact:
+    name: Ondřej Houdek
+    email: houo04@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: investment-prod
+    table: investment_company_profile_aggregation
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: investment-dev
+    table: investment_company_profile_aggregation
+
+schema:
+  - name: investment_company_profile_aggregation
+    description: >
+      Aggregated company profile table combining external provider data (MagnusWeb, Mergermarket,
+      CRIBIS, ORBIS) and internal client data (Team 3 Customer Profile DP). Each row represents
+      one company per accounting period (SCD Type 2 keyed on ic + obdobi_do).
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Critical Identifiers ---
+      - name: ic
+        type: string
+        description: >
+          Company identification number (IČO). Must be exactly 8 characters; left-padded with zeros.
+          Used as a primary business key together with obdobi_do for SCD Type 2 deduplication.
+        required: true
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Legal Obligation
+
+      - name: nazev_subjektu
+        type: string
+        description: Legal name of the company / subject name.
+        required: false
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+
+      # --- Categorical & Reference Dimensions ---
+      - name: hlavni_nace_kod
+        type: string
+        description: >
+          Primary NACE activity code. Must match the official NACE classification numerical string
+          (validated against NACE_DICTIONARY_REGEX).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: pravni_forma
+        type: string
+        description: Legal form of the company (e.g., a.s., s.r.o.).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: druh_registrace
+        type: string
+        description: Type of company registration.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: kategorie_obratu
+        type: string
+        description: Turnover category band assigned to the company.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: institucionalni_sektor_popis
+        type: string
+        description: Description of the institutional sector classification.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: kategorie_poctu_zamestnancu
+        type: string
+        description: Employee count category band assigned to the company.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: mena
+        type: string
+        description: Currency of reported financial figures. Allowed values are CZK, EUR.
+        required: true
+        enum: [CZK, EUR]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: obdobi_od
+        type: date
+        description: Accounting period start date. Must be a valid parseable date.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: obdobi_do
+        type: date
+        description: >
+          Accounting period end date (accounting year-end). Used as SCD Type 2 key together with ic.
+          Must not be null.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Core Financial KPIs ---
+      - name: cisty_obrat_za_ucetni_obdobi_i_ii_iii_iv_v_vi_vii
+        type: double
+        description: Net turnover for the accounting period (sum of selected revenue categories).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: vlastni_kapital
+        type: double
+        description: Total equity (own capital) of the company.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: provozni_hospodarsky_vysledek
+        type: double
+        description: Operating profit/loss (EBIT equivalent).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: obezna_aktiva
+        type: double
+        description: Total current assets.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: penezni_prostredky
+        type: double
+        description: Cash and cash equivalents.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: zmena_obrat_abs
+        type: double
+        description: Absolute change in turnover (calculated metric).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Balance Sheet & Income Statement ---
+      - name: dohadne_ucty_pasivni
+        type: double
+        description: Accrued liabilities (passive accrual accounts).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: dane_a_poplatky
+        type: double
+        description: Taxes and fees expense.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: stat_danove_pohledavky
+        type: double
+        description: State tax receivables.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: azio_a_kapitalove_fondy
+        type: double
+        description: Share premium and capital funds combined.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: kapitalove_fondy
+        type: double
+        description: Capital funds.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: naklady_na_socialni_zabezpeceni_a_zdravotni_pojisteni
+        type: double
+        description: Social security and health insurance costs.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: osobni_naklady
+        type: double
+        description: Total personnel costs.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: nedokoncena_vyroba_a_polotovary
+        type: double
+        description: Work in progress and semi-finished goods inventory.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: zasoby
+        type: double
+        description: Total inventories.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: zbozi
+        type: double
+        description: Merchandise / goods for resale.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: ocenitelna_prava
+        type: double
+        description: Valuable rights (intangible assets — licences, patents).
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: software
+        type: double
+        description: Software intangible asset value.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: dlouhodoby_financni_majetek
+        type: double
+        description: Long-term financial assets.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: sluzby
+        type: double
+        description: Services expense.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Risk Team Requirements ---
+      - name: upravy_hodnot_dlouhodobeho_hmotneho_a_nehmotneho_majetku_trvale
+        type: double
+        description: Permanent adjustments/impairments to long-term tangible and intangible assets.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: nakladove_uroky_a_podobne_naklady
+        type: double
+        description: Interest expense and similar financial costs.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: zavazky_k_uverovym_institucim
+        type: double
+        description: Long-term liabilities to credit institutions.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: zavazky_k_uverovym_institucim_1
+        type: double
+        description: Short-term liabilities to credit institutions.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: kratkodobe_zavazky
+        type: double
+        description: Total short-term liabilities.
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Sensitive Internal KPIs (from Team 3 Customer Profile DP) ---
+      - name: avg_monthly_turnover
+        type: double
+        description: Average monthly turnover derived from internal banking transaction data.
+        required: false
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+
+      - name: cash_flow_volatility
+        type: double
+        description: Volatility index of company cash flows based on internal transaction history.
+        required: false
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+
+      - name: intl_payment_ratio
+        type: double
+        description: Ratio of international payments to total payments volume.
+        required: false
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+
+      - name: credit_limit_utilization
+        type: double
+        description: Current credit limit utilization rate (0.0–1.0).
+        required: false
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+
+      - name: days_past_due_max
+        type: integer
+        description: Maximum number of days past due observed for this company.
+        required: false
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+
+quality:
+  # Critical Identifiers & Time Anchors (Action on Fail: Route to Quarantine)
+  - rule: not_null
+    field: record_id
+    description: "Rule_ID_01 equivalent — record_id must be populated."
+
+  - rule: unique
+    field: record_id
+    description: "record_id must be globally unique (UUID v4)."
+
+  - rule: not_null
+    field: ic
+    description: "Rule_ID_01 — Company ID (IČO) must be populated."
+
+  - rule: regex
+    field: ic
+    pattern: "^[0-9]{8}$"
+    description: "Rule_ID_02 — IČO must be exactly 8 numeric characters (left-padded with zeros)."
+
+  # Rule_ID_03 — Deduplication: unique per company per accounting year-end
+  # (enforced as unique on ic; full ic+obdobi_do dedup handled in Bronze-to-Silver ETL)
+  - rule: unique
+    field: ic
+    description: "Rule_ID_03 — Each IČO must appear only once per accounting year (dedup enforced in ETL on ic+obdobi_do partition)."
+
+  - rule: not_null
+    field: obdobi_do
+    description: "Rule_ID_04 — Accounting period end date must be populated (SCD Type 2 key)."
+
+  # Rule_ID_05 — obdobi_od date format validated via regex (YYYY-MM-DD)
+  - rule: regex
+    field: obdobi_od
+    pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    description: "Rule_ID_05 — Period start must conform to YYYY-MM-DD date format."
+
+  # Categorical & Reference Dimensions (Action on Fail: Log to DQ Report)
+  - rule: not_null
+    field: mena
+    description: "Rule_Cat_01a — Currency must be explicitly stated."
+
+  - rule: accepted_values
+    field: mena
+    values: [CZK, EUR]
+    description: "Rule_Cat_01b — Currency must be CZK or EUR."
+
+  - rule: regex
+    field: hlavni_nace_kod
+    pattern: "^[0-9]{2,6}$"
+    description: "Rule_Cat_02 — Must be a valid NACE classification numerical string."
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
+  # Rule_Fin_01 — Financial columns must be numeric (type double in schema enforces this at load)
+  # Rule_Fin_02 — NULL tolerance: documented here; zero-imputation is forbidden in ETL
+  # Both rules are enforced structurally via field type: double and required: false in schema above.
+  # Range guards are applied per key financial field below:
+  - rule: range
+    field: vlastni_kapital
+    description: "Rule_Fin_01/02 — Own capital must be numeric; NULLs permitted (Business NULL)."
+  - rule: range
+    field: cisty_obrat_za_ucetni_obdobi_i_ii_iii_iv_v_vi_vii
+    description: "Rule_Fin_01/02 — Net turnover must be numeric; NULLs permitted (Business NULL)."
+  - rule: range
+    field: provozni_hospodarsky_vysledek
+    description: "Rule_Fin_01/02 — Operating result must be numeric; NULLs permitted (Business NULL)."
+  - rule: range
+    field: obezna_aktiva
+    description: "Rule_Fin_01/02 — Current assets must be numeric; NULLs permitted (Business NULL)."
+  - rule: range
+    field: penezni_prostredky
+    description: "Rule_Fin_01/02 — Cash must be numeric; NULLs permitted (Business NULL)."
+
+  # Distribution & Volume Check (Mentor requirement)
+  - rule: row_count
+    min: 40000
+    max: 60000
+    description: "Detects data distribution anomalies (volume drop/spike). Estimated range based on Czech/Slovak investment target universe across all accounting periods."
+
+sla:
+  availability: 99.5%
+  data_latency: Bi-weekly (every 14 days) for external data sources
+  retention_period: 60 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Investment
+    business_owner: Investment Banking Lead
+    product_owner: Ondřej Houdek - houo04@vse.cz
+    data_steward: Ondřej Houdek - houo04@vse.cz
+    tags:
+      - investment
+      - aggregation
+      - company-profile
+      - m-and-a
+      - risk-scoring
+    classification: "Investment Data Product"
+    data_classification: Confidential
+    lineage:
+      upstream:
+        - name: MagnusWeb
+          type: external-provider
+          description: "External company registry and financial data aggregator for CZ/SK market."
+        - name: Mergermarket
+          type: external-provider
+          description: "M&A deal intelligence and company financial profiles."
+        - name: CRIBIS
+          type: external-provider
+          description: "Credit and business information on companies; financial statements."
+        - name: ORBIS
+          type: external-provider
+          description: "Bureau van Dijk global company database — financials, ownership, legal form."
+        - name: Customer Service Customer Profile DP (Team 3)
+          type: internal-data-product
+          description: >
+            Provides sensitive internal banking KPIs for companies that are also bank clients:
+            avg_monthly_turnover, cash_flow_volatility, intl_payment_ratio,
+            credit_limit_utilization, days_past_due_max.
+      downstream:
+        - name: Investment Peer Benchmark Profile Aggregation (Team 8)
+          type: data-product
+          description: "Consumes this product as the primary input for clustering analysis and market segmentation of investment targets."
+        - name: Credit Risk Credit Memo DP (Team 7)
+          type: data-product
+          description: "Uses company financial and risk KPIs for credit risk assessment and credit memo generation."
+        - name: Internal Risk Scoring Process
+          type: internal-system
+          description: "Uses aggregated company financials and behavioural KPIs for risk scoring of included companies."
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "ic must be exactly 8 numeric characters (left-padded with zeros)"
+      - "Combination of ic + obdobi_do must be unique (one record per company per accounting year)"
+      - "mena must be CZK or EUR and must not be null"
+      - "obdobi_do must not be null (SCD Type 2 key)"
+      - "All FINANCIAL_COLUMNS must be castable to Numeric/Double — no text artefacts permitted"
+      - "NULL values in financial columns are permitted (Business NULL); zero-imputation is forbidden"
+      - "Volume must be within expected range (40,000–60,000 rows)"
+    retention:
+      period: "60 months (5 years)"
+      rationale: >
+        Financial statement data for investment analysis and credit risk purposes is subject to
+        IFRS 9 and BCBS 239 data retention requirements. A 5-year horizon is required to support
+        multi-year trend analysis, model backtesting, and regulatory audit trails.
+
+  glossary_entry:
+    term: "Investment Company Profile"
+    definition: >
+      A structured aggregation of financial, operational, and behavioural attributes describing
+      a legal entity considered as a potential investment target or credit counterparty,
+      combining publicly available registry and financial statement data with internal
+      banking relationship metrics.
+    fibo_class: "fibo-be-le-lp:LegalPerson"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/BE/LegalEntities/LegalPersons/LegalPerson"
+    domain: Investment
+    dawiso_status: draft
+    steward: Ondřej Houdek - houo04@vse.cz
+    synonyms:
+      - Profil investičního cíle
+      - Profil společnosti
+    acronyms:
+      - ICP
+    related_capability: "Investment Analysis & M&A Screening"
+    related_terms:
+      - "Credit Counterparty"
+      - "NACE Classification"
+      - "Peer Benchmarking"
+      - "Risk Scoring"
+      - "Financial Statement"
