@@ -1,0 +1,45 @@
+
+✅ [team1-digi/retail_sales_customer_acquisition_history.yml] OK
+
+✅ [team1-digi/retail_sales_customer_cohort_aggregation.yml] OK
+
+✅ [team1-digi/retail_sales_digital_agreemente_events.yml] OK
+
+✅ [team2-Data-Governance/datacontract_governance_metadata.yml] OK
+
+✅ [team3-client-service/cs_customer_profile.yaml] OK
+
+✅ [team3-client-service/cs_interaction_events.yaml] OK
+
+✅ [team3-client-service/cs_kpi_performance.yaml] OK
+
+✅ [team4-steering-data/accounting_customer_account_balances.yml] OK
+
+✅ [team4-steering-data/accounting_deviation_snapshot.yml] OK
+
+✅ [team4-steering-data/accounting_gl_account_balances.yml] OK
+
+✅ [team5-esg-risk/ESG_Risk_Energy_Profile.yaml] OK
+
+✅ [team5-esg-risk/ESG_Risk_Score_Profile.yaml] OK
+
+✅ [team6-strategy/strategy_knowledge_snapshot.yaml] OK
+
+✅ [team6-strategy/strategy_market_rate_snapshot.yaml] OK
+
+✅ [team7-gen-ai/credit-risk-credit-memo-profile.yaml] OK
+
+✅ [team7-gen-ai/credit-risk-early-warning-history.yaml] OK
+
+✅ [team8-investment-banking/investment-company-profile-aggregation.yml] OK
+
+✅ [team8-investment-banking/investment-peer-benchmark-profile-aggregation.yml] OK
+
+============================================================
+VÝSLEDEK VALIDACE v5
+============================================================
+Celkem souborů:       18
+Souborů bez chyb:     18
+Souborů s chybami:    0
+Celkem chyb:          0  (v 0 souborech)
+============================================================
