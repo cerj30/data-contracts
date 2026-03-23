@@ -33,7 +33,8 @@ VALID_FIELD_TYPES = [
 ]
 VALID_QUALITY_RULES = [
     "not_null", "unique", "accepted_values",
-    "min_value", "max_value", "regex", "row_count", "range"
+    "min_value", "max_value", "regex", "row_count", "range",
+    "custom", "completeness"
 ]
 VALID_SENSITIVITIES = ["Internal", "Confidential", "Public", "Restricted"]
 VALID_LEGAL_BASES = ["Contractual", "Consent", "Legal Obligation"]
@@ -178,6 +179,9 @@ def validate_contract(path):
                     has_row_count = True
                     check(errors, "min" in rule or "max" in rule,
                           "Quality rule `row_count` musí mít `min` nebo `max`")
+                elif rt == "custom":
+                    # custom rules may use 'field', 'fields', or neither
+                    pass
                 else:
                     check(errors, "field" in rule,
                           f"Quality pravidlo `{rt}` chybí `field`")

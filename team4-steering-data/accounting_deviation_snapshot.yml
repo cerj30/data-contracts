@@ -1,140 +1,174 @@
 dataContractSpecification: 1.1.0
-id: urn:businessdomain:nova-banka:steering-data:accounting-deviation-snapshot
+id: urn:datacontract:nova-banka:accounting:gl-deviation-snapshot-state:0.1.0
 info:
-  title: DP_ACCOUNTING_DEVIATION_SNAPSHOT
-  name: Accounting Deviation Snapshot
-  maturity_score: 60%
-  version: 1.0.0
-  status: in development
-  product_type: AGGREGATION
+  title: Accounting Deviation Snapshot
+  name: Accounting GL Deviation Snapshot STATE
+  product_type: STATE
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Data latency: T+1
+    Business Entity: General Ledger Account
+    Business Purpose: Reconciliation of GL and client data for Head Office reporting.
+      Datový produkt slouží k vyřešení deviací mezi zůstatky hlavní knihy (GL)
+      a klientskými daty. Zajišťuje bezchybný reporting mateřské společnosti,
+      včasnou detekci chyb a důvěryhodnost finančních výkazů.
+    Consumers: Head Office (matka), Data Stewardi, Účetnictví
+    Data Sources: Transakční systémy, Tým 3: Obsluha klienta
+  owner: "Nova Banka / Team 4: Steering Data / Accounting"
   x-regulatory:
     gdpr_relevant: false
     critical_data_element: true
-    regulatory_framework: "BCBS 239"
-  description: "Data produkt slouží k vyřešení deviací mezi zůstatky hlavní knihy\
-    \ (GL) a klientskými daty. \nZajišťuje bezchybný reporting mateřské společnosti,\
-    \ včasnou detekci chyb a důvěryhodnost finančních výkazů.\nKonzumenti: Head Office\
-    \ (matka), Data Stewardi, Účetnictví.\nData latency: T + 1 (závisí na dostupnosti\
-    \ produktů GL Balances a Customer Balances).\n\nZáznamy jsou na úrovni detailu:\
-    \ 1 řádek = 1 GCOA účet a jeho vyčíslená odchylka v CZK.\n\nFilter Rules:\n* Pouze\
-    \ záznamy s platným business_date\n* Zahrnuje pouze vyčíslené rozdíly (odchylky)\
-    \ mezi GL a agregovanými klientskými daty\n\nUse Cases:\n* UC1 - Automatické generování\
-    \ DEVIATION_REPORT pro reportování Head Office.\n* UC2 - Identifikace nesrovnalostí\
-    \ pro opravy zdrojových dat Data Stewardy.\n* UC3 - Plnění požadavků pro regulatorní\
-    \ reporting a finanční rekonciliaci.\n"
-  owner: Nova Banka \ IT Squad Steering data \ Tým 4
-  contact:
-    name: Josef Kuník
-    email: josef.kunik@nova-banka.cz
+    regulatory_framework: "IFRS 9"
+
+contact:
+  name: Josef Kuník
+  email: josef.kunik@nova-banka.cz
+
 servers:
   PRODUCTION:
     type: databricks
     host: nova-banka-prod.cloud.databricks.com
     environment: production
     catalog: datamesh-nova-banka-prod
-    schema: steering-prod
-    table: dp_accounting_deviation_snapshot
+    schema: accounting-prod
+    table: gl_deviation_snapshot
   DEVELOPMENT:
     type: databricks
     host: nova-banka-dev.cloud.databricks.com
     environment: development
     catalog: datamesh-nova-banka-dev
-    schema: steering-dev
-    table: dp_accounting_deviation_snapshot
+    schema: accounting-dev
+    table: gl_deviation_snapshot
+
 schema:
-- name: dp_accounting_deviation_snapshot
-  description: Přehled odchylek (deviací) mezi hlavní knihou a klientskými daty vztažený
-    na GCOA
-  fields:
-  - name: record_id
-    type: string
-    description: Unikátní identifikátor záznamu (UUID)
-    required: true
-    unique: true
-    example: abc12345-d678-90ef-1234-56789abcdef0
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: business_date
-    type: date
-    description: Datum záznamu ve formátu YYYY-MM-DD
-    required: true
-    example: '2024-01-31'
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: gcoa_account
-    type: string
-    description: Číslo účtu v globální účetní osnově mateřské společnosti (GCOA)
-    required: true
-    example: '10010000'
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: gl_balance_aggregated
-    type: decimal
-    description: Agregovaný zůstatek z hlavní knihy pro daný GCOA účet
-    required: true
-    example: 2500000.5
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: customer_balance_aggregated
-    type: decimal
-    description: Agregovaný zůstatek z klientských systémů namapovaný na daný GCOA
-      účet
-    required: true
-    example: 2499500.5
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: deviation_amount
-    type: decimal
-    description: Vyčíslená odchylka (rozdíl) mezi GL a klientskými daty (GL - Customer)
-    required: true
-    example: 500.0
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: currency
-    type: string
-    description: Měna odchylky - ISO 4217 kód
-    required: true
-    example: CZK
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
-  - name: created_at
-    type: timestamp
-    description: Čas vygenerování a zápisu záznamu
-    required: true
-    example: '2024-02-01T07:00:00Z'
-    x-compliance:
-      is_pii: false
-      sensitivity: Internal
+  - name: gl_deviation_snapshot
+    description: Snapshot of GL account balances and calculated deviations in CZK
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: GLBAL_DATE
+        type: date
+        description: General Ledger balance date
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: DOM_GCOA
+        type: string
+        description: Global Chart of Accounts (GCOA) account identifier
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: WORK_BAL
+        type: double
+        description: Working balance amount
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: AVG_WORK_BAL
+        type: double
+        description: Average working balance amount
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: GLBAL_AMOUNT_CZK
+        type: double
+        description: General Ledger balance amount in CZK
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: AVG_GLBAL_AMOUNT_CZK
+        type: double
+        description: Average General Ledger balance amount in CZK
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: VD5_BAL
+        type: double
+        description: VD5 balance amount
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: VD5_BAL_AVG
+        type: double
+        description: Average VD5 balance amount
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: DIFF_BAL_CALC
+        type: double
+        description: Calculated difference balance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: AVG_DIFF_BAL_CALC
+        type: double
+        description: Average calculated difference balance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
 quality:
-- rule: not_null
-  field: record_id
-  description: ID záznamu nesmí být prázdné
-- rule: not_null
-  field: business_date
-  description: Datum záznamu nesmí být prázdné
-- rule: unique
-  field: record_id
-  description: Každý záznam musí mít unikátní ID
-- rule: not_null
-  field: gcoa_account
-  description: Vazba na GCOA (globální účet) nesmí chybět
-- rule: not_null
-  field: deviation_amount
-  description: Hodnota odchylky nesmí být prázdná (může být i 0.00, pokud k odchylce
-    nedošlo)
-- rule: row_count
-  min: 1
-  max: 100000
-  description: Detects data distribution anomalies in daily accounting deviation snapshot
+  - rule: not_null
+    field: record_id
+
+  - rule: unique
+    field: record_id
+
+  - rule: row_count
+    min: 1000
+    max: 50000
+    description: "Detects data distribution anomalies (volume drop/spike) for GCOA deviation reporting"
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
 sla:
   availability: 99.5%
   data_latency: T+1
-  retention_period: 36 months
-  support_contact: josef.kunik@nova-banka.cz
+  retention_period: 12 months

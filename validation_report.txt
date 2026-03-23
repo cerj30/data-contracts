@@ -1,9 +1,7 @@
 
-✅ [team1-digi/retail_sales_customer_acquisition_history.yml] OK
+✅ [team1-digi/retail_sales_vehicle_insurance_propensity_state.yaml] OK
 
-✅ [team1-digi/retail_sales_customer_cohort_aggregation.yml] OK
-
-✅ [team1-digi/retail_sales_digital_agreemente_events.yml] OK
+✅ [team1-digi/strategy_marketing_performance_acquisition_aggregation.yaml] OK
 
 ✅ [team2-Data-Governance/datacontract_governance_metadata.yml] OK
 
@@ -13,11 +11,7 @@
 
 ✅ [team3-client-service/cs_kpi_performance.yaml] OK
 
-✅ [team4-steering-data/accounting_customer_account_balances.yml] OK
-
 ✅ [team4-steering-data/accounting_deviation_snapshot.yml] OK
-
-✅ [team4-steering-data/accounting_gl_account_balances.yml] OK
 
 ✅ [team5-esg-risk/ESG_Risk_Energy_Profile.yaml] OK
 
@@ -38,8 +32,8 @@
 ============================================================
 VÝSLEDEK VALIDACE v5
 ============================================================
-Celkem souborů:       18
-Souborů bez chyb:     18
+Celkem souborů:       15
+Souborů bez chyb:     15
 Souborů s chybami:    0
 Celkem chyb:          0  (v 0 souborech)
 ============================================================
