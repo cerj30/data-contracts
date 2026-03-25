@@ -127,7 +127,7 @@ quality:
 
   - rule: accepted_values
     field: source
-    values: [ČNB, ČSÚ, Česká spořitelna, ČSOB, Komerční banka, Raiffeisenbank, mBank, Air Bank]
+    values: [ČNB, ČSÚ, Česká spořitelna, ČSOB, KB, Raiffeisenbank, mBank, AirBank, Fio, Moneta]
     description: Zdroj musí být ze seznamu sledovaných institucí
 
   - rule: not_null
