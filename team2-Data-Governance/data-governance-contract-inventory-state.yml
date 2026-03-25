@@ -1,0 +1,293 @@
+dataContractSpecification: 1.1.0
+id: urn:nova-banka:data-governance:contract-inventory:v0.1.0
+info:
+  title: Data Governance Contract Inventory State
+  name: Data Governance Contract Inventory State
+  product_type: STATE
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Centralized metadata inventory of all active Data Contracts across the Nova Banka
+    Data Mesh. Captures compliance attributes, product ownership, PII classification,
+    regulatory framework assignments, and Databricks technical paths for every registered
+    data product. Serves as the authoritative governance registry consumed by Enterprise
+    Architects, Compliance Officers, and Data Stewards to ensure consistent policy
+    enforcement and audit readiness.
+    Data latency: Daily refresh via GitHub Actions event-driven synchronization with Unity Catalog
+    Business Entity:  Data Contract (YAML artifact)
+    Business Purpose: Provide a single, always-current inventory of all data product contracts
+                      including their compliance status, PII classification, legal basis,
+                      consumer mapping, and technical Databricks paths within the Data Mesh.
+    Consumers:        Data Governance Team, Enterprise Architects, Compliance Officers,
+                      Data Stewards, Workshop Mentors
+    Data Sources:     bank-data-contracts GitHub repository, individual YAML contract files,
+                      Git commit history
+
+  x-regulatory:
+    gdpr_relevant: true
+    critical_data_element: true
+    regulatory_framework: "GDPR"
+
+  owner: Nova Banka \ Team3 \ Data Governance & EA
+  contact:
+    name: Tomáš Kočí
+    email: koct03@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: data-governance-prod
+    table: contract_inventory_state
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: data-governance-dev
+    table: contract_inventory_state
+
+schema:
+  - name: contract_inventory_state
+    description: >
+      One row per registered Data Contract in the Nova Banka Data Mesh.
+      Each row represents the current STATE of a contract including its compliance
+      metadata, ownership, PII classification, legal basis, and Databricks path.
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4) — surrogate key for this inventory row.
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: business_date
+        type: date
+        description: Business processing date on which this snapshot was captured (YYYY-MM-DD).
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: region
+        type: string
+        description: Geographic region of the owning team [CZ, SK].
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      # --- Business fields ---
+
+      - name: product_name
+        type: string
+        description: >
+          Human-readable name of the Data Product as declared in the YAML contract
+          (info.name field). Used as the primary display identifier in governance tooling.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: domain
+        type: string
+        description: >
+          Business domain owning the data product. Allowed values align with Nova Banka
+          domain taxonomy: ESG Risk, Credit Risk, Investment, Retail Sales,
+          Customer Service, Accounting, Strategy, Data Governance & EA.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: pii_share
+        type: float
+        description: >
+          Proportion of schema fields classified as PII (is_pii: true) within this
+          contract, expressed as a decimal between 0.0 and 1.0.
+          Example: 0.25 means 25% of the contract's fields contain personal data.
+          Sensitive result — used by Compliance for GDPR exposure assessments.
+        required: true
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Legal Obligation
+
+      - name: legal_basis
+        type: string
+        description: >
+          GDPR legal basis declared in the contract for processing personal data fields.
+          Possible values: Contractual, Consent, Legal Obligation, Legitimate Interest, None.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: consumers
+        type: string
+        description: >
+          Comma-separated list of consuming systems or teams as declared in the contract's
+          downstream lineage section. Used for impact analysis and change notification routing.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: last_modified
+        type: timestamp
+        description: >
+          UTC timestamp of the most recent Git commit that modified this contract file,
+          derived from Git commit history via GitHub Actions. Format: ISO 8601.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+      - name: databricks_path
+        type: string
+        description: >
+          Fully qualified Databricks Unity Catalog path for the data product table,
+          in the format: <catalog>.<schema>.<table>. Used by engineers for direct
+          lineage tracing and access policy enforcement.
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+
+quality:
+  - rule: not_null
+    field: record_id
+
+  - rule: unique
+    field: record_id
+
+  - rule: not_null
+    field: product_name
+
+  - rule: not_null
+    field: domain
+
+  - rule: not_null
+    field: legal_basis
+
+  - rule: not_null
+    field: databricks_path
+
+  # Distribution & Volume check (Mentor requirement)
+  - rule: row_count
+    min: 10
+    max: 5000
+    description: >
+      Detects data distribution anomalies (volume drop/spike).
+      Row count must equal the number of registered contracts in the
+      bank-data-contracts GitHub repository. Expected range 10–5000 contracts
+      for a growing Data Mesh at Nova Banka.
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
+  - rule: accepted_values
+    field: legal_basis
+    values: [Contractual, Consent, Legal Obligation, Legitimate Interest, None]
+
+  - rule: range
+    field: pii_share
+    min: 0.0
+    max: 1.0
+    description: "PII share must be a valid proportion between 0.0 and 1.0"
+
+sla:
+  availability: 99.5%
+  data_latency: Daily refresh (event-driven via GitHub Actions, T+0 intraday for push events)
+  retention_period: 60 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Data Governance & EA
+    business_owner: Head of Data Governance
+    product_owner: Tomáš Kočí - koct03@vse.cz
+    data_steward: Tomáš Kočí - koct03@vse.cz
+    tags:
+      - data-governance
+      - state-product
+      - metadata-inventory
+      - compliance
+    classification: "Governance Data Product"
+    data_classification: Confidential
+    lineage:
+      upstream:
+        - name: bank-data-contracts GitHub Repository
+          type: internal-system
+          description: >
+            Source of truth for all Data Contract YAML files. GitHub Actions pipeline
+            triggers on every commit and push event to extract metadata and synchronize
+            the inventory table in Unity Catalog.
+        - name: Git Commit History
+          type: internal-system
+          description: >
+            Provides last_modified timestamps and change audit trail for each
+            contract file, enabling version tracking and compliance audit support.
+      downstream:
+        - name: Data Governance Dashboard
+          type: data-product
+          description: >
+            Consumes the inventory to render compliance KPIs, PII exposure heatmaps,
+            and domain-level maturity scores for Data Stewards and Compliance Officers.
+        - name: Enterprise Architecture Repository
+          type: data-product
+          description: >
+            Uses Databricks paths and domain metadata for Data Mesh topology mapping
+            and architecture documentation maintained by Enterprise Architects.
+        - name: Compliance Reporting
+          type: data-product
+          description: >
+            Uses pii_share, legal_basis, and regulatory_framework fields for automated
+            GDPR exposure reporting and audit evidence packages.
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "Volume must be within expected range (10–5000 rows)"
+      - "pii_share must be a decimal between 0.0 and 1.0"
+      - "legal_basis must be one of: Contractual, Consent, Legal Obligation, Legitimate Interest, None"
+      - "Every row must have a non-null databricks_path in catalog.schema.table format"
+      - "100% of schema fields must have x-compliance.is_pii documented"
+    retention:
+      period: "60 months"
+      rationale: >
+        Regulatory audit requirement for metadata change history. 60-month retention
+        supports GDPR accountability obligations (Art. 5(2)) and internal audit cycles,
+        allowing reconstruction of governance decisions and PII classification history
+        over a 5-year window.
+
+  glossary_entry:
+    term: "Data Governance Contract Inventory"
+    definition: >
+      A structured registry that consolidates the metadata, compliance attributes,
+      ownership information, and technical access paths of all active Data Contracts
+      within the Nova Banka Data Mesh, serving as the authoritative source for
+      governance oversight, GDPR accountability, and enterprise architecture documentation.
+    fibo_class: "fibo-fnd-arr-doc:Document"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/Document"
+    domain: Data Governance & EA
+    dawiso_status: draft
+    steward: Tomáš Kočí - koct03@vse.cz
+    synonyms:
+      - Inventář datových kontraktů
+      - Registr datových produktů
+    acronyms:
+      - DGCI
+    related_capability: "Data Contract Lifecycle Management"
+    related_terms:
+      - "Data Contract"
+      - "Data Mesh"
+      - "PII Classification"
+      - "Data Lineage"
+      - "Unity Catalog"
+      - "GDPR Legal Basis"
