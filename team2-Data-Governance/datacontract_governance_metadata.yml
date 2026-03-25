@@ -21,8 +21,8 @@ info:
     '
   owner: Tomáš Kočí
   contact:
-    name: Data Governance Team
-    email: data.governance@nova-banka.cz
+    name: Tomáš Kočí
+    email: koct03@vse.cz
 servers:
   PRODUCTION:
     type: databricks
