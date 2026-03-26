@@ -10,6 +10,10 @@
 
   ✅  team4-steering-data/accounting_deviation_snapshot.yml  →  all checks passed
 
+  ✅  team5-esg-risk/esg_risk_energy_profile.yaml  →  all checks passed
+
+  ✅  team5-esg-risk/esg_risk_score_profile.yaml  →  all checks passed
+
   ✅  team6-strategy/strategy_knowledge_snapshot.yaml  →  all checks passed
 
   ✅  team6-strategy/strategy_market_rate_snapshot.yaml  →  all checks passed
@@ -23,6 +27,6 @@
   ✅  team8-investment-banking/investment_peer_benchmark_profile.yml  →  all checks passed
 
 ───────────────────────────────────────────────────────────
- Files checked : 10
+ Files checked : 12
  Total issues  : 0
 ───────────────────────────────────────────────────────────

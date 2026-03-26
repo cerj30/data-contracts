@@ -13,16 +13,15 @@ info:
     Business Purpose: Automated estimation of energy performance of buildings for valuation and credit approval reporting. Based on GPS location, an energy label value is calculated for loan approval purposes.
     Consumers: Client Services (Obsluha klienta)
     Data Sources: ICM Gen AI, public registries (RUIAN, VÚV TGM, CHMI)
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true — only fields strictly necessary for energy label estimation and credit valuation are collected"
+    right_to_erasure: "false — no personal data is processed; erasure obligations do not apply"
+    purpose_limitation: "true — processing is strictly limited to energy performance estimation for loan approval and ESG reporting"
 
-x-regulatory:
-  gdpr_relevant: false
-  critical_data_element: true
-  regulatory_framework: "BCBS 239"
-  data_minimization: "true — only fields strictly necessary for energy label estimation and credit valuation are collected"
-  right_to_erasure: "false — no personal data is processed; erasure obligations do not apply"
-  purpose_limitation: "true — processing is strictly limited to energy performance estimation for loan approval and ESG reporting"
-
-owner: Nova Banka
+owner: Horizon AI Bank
 
 contact:
   name: Anna Spilková
@@ -223,8 +222,7 @@ x-dawiso:
     retention:
       period: "36 months"
       rationale: "Aligned with credit lifecycle and ESG audit requirements; consistent with EBA loan origination guidelines"
-
-  regulatory_mapping:
+    regulatory_mapping:
     - regulation: BCBS 239
       status: Contributes
       reason: "Provides structured, traceable building risk data with documented lineage, data quality rules, and D+1 timeliness — directly supports risk data aggregation and reporting accuracy principles"
@@ -255,47 +253,45 @@ x-dawiso:
     - regulation: IFRS 9
       status: Contributes
       reason: "Energy performance and climate risk indicators (flood zone, temperature trend) may inform ECL model inputs and staging decisions under IFRS 9 forward-looking macroeconomic scenario adjustments"
-
-  ai_act:
-    is_ai_input: true
-    is_ai_output: true
-    high_risk_classification: true
-    fria_required: true
-    fria_notes: >
-      This data product is both an input to and an output of the ICM Gen AI system, which automatically estimates
-      energy labels used in credit approval decisions. Under EU AI Act Annex III (Article 6), AI systems used for
-      creditworthiness assessment and loan evaluation are classified as HIGH-RISK.
-      Affected persons: property owners and loan applicants whose collateral is evaluated.
-      Rights at risk: right to non-discrimination (biased GPS/temperature data may disadvantage certain regions),
-      right to explanation (automated energy class assignment affecting credit outcomes).
-      Bias mitigation measures required: geographic coverage audit of RUIAN/CHMI data completeness,
-      regular validation of AI-generated labels against certified energy assessors,
-      human-in-the-loop override for credit decisions where energy label is a decisive factor.
-      A Fundamental Rights Impact Assessment (FRIA) must be conducted prior to production deployment.
-
-glossary_entry:
-  term: "Energetický štítek (Energy Performance Label)"
-  definition: >
-    A standardized classification (A through G) of the energy performance of a building,
-    estimated using GPS-based location data, public environmental registries, and AI inference.
-    Used by Nova Banka to assess collateral quality in the context of credit approval and ESG risk reporting.
-    Derived from EU Energy Performance of Buildings Directive (EPBD) standards.
-  fibo_class: "fibo-loan:CollateralCharacteristic"
-  fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/CollateralCharacteristic"
-  domain: ESG Risk
-  dawiso_status: draft
-  steward: Anna Spilková - spia05@vse.cz
-  synonyms:
-    - Energy Certificate
-    - PENB (Průkaz energetické náročnosti budovy)
-    - EPC (Energy Performance Certificate)
-  acronyms:
-    - PENB
-    - EPC
-  related_capability: "Collateral ESG Assessment / Climate Risk Scoring"
-  related_terms:
-    - "Flood Zone Classification"
-    - "Climate Physical Risk"
-    - "Collateral Valuation"
-    - "Building Identifier (ID budovy)"
-    - "AI Act High-Risk System"
+    ai_act:
+      is_ai_input: true
+      is_ai_output: true
+      high_risk_classification: true
+      fria_required: true
+      fria_notes: >
+        This data product is both an input to and an output of the ICM Gen AI system, which automatically estimates
+        energy labels used in credit approval decisions. Under EU AI Act Annex III (Article 6), AI systems used for
+        creditworthiness assessment and loan evaluation are classified as HIGH-RISK.
+        Affected persons: property owners and loan applicants whose collateral is evaluated.
+        Rights at risk: right to non-discrimination (biased GPS/temperature data may disadvantage certain regions),
+        right to explanation (automated energy class assignment affecting credit outcomes).
+        Bias mitigation measures required: geographic coverage audit of RUIAN/CHMI data completeness,
+        regular validation of AI-generated labels against certified energy assessors,
+        human-in-the-loop override for credit decisions where energy label is a decisive factor.
+        A Fundamental Rights Impact Assessment (FRIA) must be conducted prior to production deployment.
+  glossary_entry:
+    term: "Energetický štítek (Energy Performance Label)"
+    definition: >
+      A standardized classification (A through G) of the energy performance of a building,
+      estimated using GPS-based location data, public environmental registries, and AI inference.
+      Used by Horizon AI Bank to assess collateral quality in the context of credit approval and ESG risk reporting.
+      Derived from EU Energy Performance of Buildings Directive (EPBD) standards.
+    fibo_class: "fibo-loan:CollateralCharacteristic"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/CollateralCharacteristic"
+    domain: ESG Risk
+    dawiso_status: draft
+    steward: Anna Spilková - spia05@vse.cz
+    synonyms:
+      - Energy Certificate
+      - PENB (Průkaz energetické náročnosti budovy)
+      - EPC (Energy Performance Certificate)
+    acronyms:
+      - PENB
+      - EPC
+    related_capability: "Collateral ESG Assessment / Climate Risk Scoring"
+    related_terms:
+      - "Flood Zone Classification"
+      - "Climate Physical Risk"
+      - "Collateral Valuation"
+      - "Building Identifier (ID budovy)"
+      - "AI Act High-Risk System"
