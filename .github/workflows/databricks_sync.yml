@@ -1,8 +1,9 @@
 name: Databricks Git Sync
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:  # run manually only — automatic sync disabled (PAT token 403)
+  # push:
+  #   branches:
+  #     - main
 
 jobs:
   sync:
