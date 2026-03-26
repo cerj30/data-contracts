@@ -1,0 +1,335 @@
+dataContractSpecification: 1.1.0
+id: urn:datacontract:investment:investment-corporate-snapshot:v0.1.0
+
+info:
+  title: Investment Corporate Snapshot
+  name: Investment Corporate Snapshot
+  product_type: AGGREGATION
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Aggregated dataset providing structured financial and descriptive information about potential investment target companies. The dataset combines external public data sources with internal bank data to support investment analysis, benchmarking, clustering, and risk assessment.
+    Data latency: Bi-weekly refresh (every 2 weeks)
+    Business Entity:  Company
+    Business Purpose: Support investment decision-making, peer benchmarking, clustering analysis, and credit risk assessment
+    Consumers:        Investment Peer Benchmark Profile (Team 8), Credit Risk Credit Memo (Team 7), internal risk scoring systems
+    Data Sources:     External providers (CRIBIS, ORBIS, MagnusWeb, Mergermarket), Customer Service Customer Profile (Team 3)
+
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true"
+    right_to_erasure: "false"
+    purpose_limitation: "true"
+
+  owner: Horizon AI Bank \ Team 8 \ Investment
+  contact:
+    name: Ondřej Houdek
+    email: houo04@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: investment-prod
+    table: investment_corporate_snapshot
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: investment-dev
+    table: investment_corporate_snapshot
+
+schema:
+  - name: investment_corporate_snapshot
+    description: Aggregated company-level dataset for investment and risk analysis
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic partitioning"
+
+      - name: ic
+        type: string
+        description: Company identification number (ICO)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — entity identification"
+
+      - name: nazev_subjektu
+        type: string
+        description: Company name
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — entity identification"
+
+      - name: hlavni_nace_kod
+        type: string
+        description: Main NACE classification code
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EU NACE regulation — industry classification"
+
+      - name: pravni_forma
+        type: string
+        description: Legal form of the company
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance"
+
+      - name: kategorie_obratu
+        type: string
+        description: Turnover category
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance"
+
+      - name: avg_monthly_turnover
+        type: double
+        description: Average monthly turnover (internal KPI)
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          regulatory_basis: "BCBS 239 — risk data aggregation"
+
+      - name: cash_flow_volatility
+        type: double
+        description: Cash flow volatility metric
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          regulatory_basis: "BCBS 239 — risk metrics"
+
+      - name: credit_limit_utilization
+        type: double
+        description: Credit limit utilization ratio
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          regulatory_basis: "BCBS 239 — credit risk monitoring"
+
+      - name: days_past_due_max
+        type: integer
+        description: Maximum days past due
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          regulatory_basis: "BCBS 239 — credit risk monitoring"
+
+      - name: mena
+        type: string
+        description: Currency (CZK/EUR)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance"
+
+      - name: obdobi_od
+        type: date
+        description: Accounting period start date
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — time reference"
+
+      - name: obdobi_do
+        type: date
+        description: Accounting period end date
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — time reference"
+
+      - name: vlastni_kapital
+        type: double
+        description: Equity
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — financial reporting"
+
+      - name: provozni_hospodarsky_vysledek
+        type: double
+        description: Operating profit/loss
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — financial reporting"
+
+      - name: obezna_aktiva
+        type: double
+        description: Current assets
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — balance sheet reporting"
+
+      - name: kratkodobe_zavazky
+        type: double
+        description: Short-term liabilities
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — balance sheet reporting"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+
+  - rule: row_count
+    min: 5000
+    max: 10000
+    description: "Detects data distribution anomalies (volume drop/spike)"
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
+sla:
+  availability: 99.5%
+  data_latency: Bi-weekly
+  retention_period: 60 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Investment
+    business_owner: Head of Investment Analytics
+    product_owner: Ondřej Houdek - houo04@vse.cz
+    data_steward: Ondřej Houdek - houo04@vse.cz
+    tags:
+      - investment
+      - aggregation
+    classification: "Analytical Data Product"
+    data_classification: Confidential
+    lineage:
+      upstream:
+        - name: CRIBIS / ORBIS / MagnusWeb / Mergermarket
+          type: external-system
+          description: "Provides company financials and descriptive attributes"
+        - name: Customer Profile Data Product
+          type: internal-system
+          description: "Provides internal client-level enrichment data"
+      downstream:
+        - name: Investment Peer Benchmark Profile
+          type: data-product
+          description: "Used for clustering and benchmarking analysis"
+        - name: Credit Risk Credit Memo
+          type: data-product
+          description: "Used for credit risk analysis and scoring"
+
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "Volume must be within expected range"
+
+    retention:
+      period: "60 months"
+      rationale: "Supports long-term investment analysis and regulatory audit requirements"
+
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: "Contributes"
+        reason: "Provides structured, high-quality data for risk aggregation and reporting"
+      - regulation: BASEL IV
+        status: "N/A"
+        reason: "No direct capital or RWA calculations"
+      - regulation: EBA
+        status: "Contributes"
+        reason: "Supports governance and data ownership requirements"
+      - regulation: DORA
+        status: "Contributes"
+        reason: "Ensures availability and resilience through SLA"
+      - regulation: AML
+        status: "N/A"
+        reason: "No direct AML/KYC data"
+      - regulation: MiFID II
+        status: "N/A"
+        reason: "No trading or transaction reporting"
+      - regulation: PSD2
+        status: "N/A"
+        reason: "No payment services data"
+      - regulation: GDPR
+        status: "N/A"
+        reason: "No personal data present"
+      - regulation: AI Act
+        status: "Contributes"
+        reason: "Provides structured input data for AI-based clustering models"
+      - regulation: IFRS 9
+        status: "Contributes"
+        reason: "Provides financial inputs for risk assessment models"
+
+    ai_act:
+      is_ai_input: true
+      is_ai_output: false
+      high_risk_classification: true
+      fria_required: true
+      fria_notes: "Used for clustering and risk profiling of companies; potential indirect impact on credit decisions. Bias mitigation required via feature validation and explainability."
+
+  glossary_entry:
+    term: "Investment Corporate Snapshot"
+    definition: "An aggregated dataset containing structured financial and descriptive attributes of companies used for investment analysis and risk assessment."
+    fibo_class: "fibo-fbc-pas-fpas:FinancialOrganization"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/FinancialProductsAndServices/FinancialOrganization"
+    domain: Investment
+    dawiso_status: draft
+    steward: Ondřej Houdek - houo04@vse.cz
+    synonyms:
+      - "Investiční profil společnosti"
+    acronyms:
+      - ICS
+    related_capability: "Investment Analysis"
+    related_terms:
+      - "Company Financial Profile"
+      - "Credit Risk Assessment"

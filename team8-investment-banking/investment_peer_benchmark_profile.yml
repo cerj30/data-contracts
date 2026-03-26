@@ -1,0 +1,324 @@
+dataContractSpecification: 1.1.0
+id: urn:datacontract:investment:investment-peer-benchmark-profile
+info:
+  title: Investment Peer Benchmark Profile
+  name: Investment Peer Benchmark Profile
+  product_type: AGGREGATION
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    An analytical dataset providing structured benchmarking of companies based on financial, operational, and categorical attributes. The product assigns cluster identifiers derived from clustering analysis to group similar companies into peer segments for investment evaluation and risk assessment.
+    Data latency: Bi-weekly
+    Business Entity:  Company
+    Business Purpose: Support peer comparison, segmentation, and investment decision-making
+    Consumers:        Sales Department, Risk Management
+    Data Sources:     Investment Corporate Snapshot
+
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true"
+    right_to_erasure: "false"
+    purpose_limitation: "true"
+
+  owner: Horizon AI Bank \ Team 8 \ Investment
+  contact:
+    name: Ondřej Houdek
+    email: houo04@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: investment-prod
+    table: investment_peer_benchmark_profile
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: investment-dev
+    table: investment_peer_benchmark_profile
+
+schema:
+  - name: investment_peer_benchmark_profile
+    description: Benchmarking dataset of companies with clustering segmentation
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic partitioning"
+
+      - name: ic
+        type: string
+        description: Company identification number (IČO)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — entity identification"
+
+      - name: nazev_subjektu
+        type: string
+        description: Company name
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — business identification"
+
+      - name: hlavni_nace_kod
+        type: string
+        description: Main NACE industry classification code
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA — industry classification for risk analysis"
+
+      - name: pravni_forma
+        type: string
+        description: Legal form of the company
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance"
+
+      - name: druh_registrace
+        type: string
+        description: Type of company registration
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance"
+
+      - name: kategorie_obratu
+        type: string
+        description: Revenue category classification
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — risk segmentation"
+
+      - name: institucionalni_sektor_popis
+        type: string
+        description: Institutional sector description
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA — sector classification"
+
+      - name: kategorie_poctu_zamestnancu
+        type: string
+        description: Employee count category
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance"
+
+      - name: vlastni_kapital
+        type: double
+        description: Equity capital
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — financial reporting reference"
+
+      - name: zmena_obrat_abs
+        type: double
+        description: Absolute change in revenue
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — KPI calculation"
+
+      - name: dohadne_ucty_pasivni
+        type: double
+        description: Accrued liabilities
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — balance sheet item"
+
+      - name: dane_a_poplatky
+        type: double
+        description: Taxes and fees
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — income statement item"
+
+      - name: zasoby
+        type: double
+        description: Inventory value
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — balance sheet item"
+
+      - name: software
+        type: double
+        description: Software assets value
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS — intangible assets"
+
+      - name: sluzby
+        type: double
+        description: Services expenses
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance"
+
+      - name: cluster_id
+        type: integer
+        description: Cluster identifier representing peer group segment
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — risk segmentation and aggregation"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+  - rule: row_count
+    min: 1000
+    max: 1000000
+    description: "Detects data distribution anomalies (volume drop/spike)"
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
+sla:
+  availability: 99.5%
+  data_latency: Bi-weekly
+  retention_period: 60 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Investment
+    business_owner: Head of Investment Analytics
+    product_owner: Ondřej Houdek - houo04@vse.cz
+    data_steward: Ondřej Houdek - houo04@vse.cz
+    tags:
+      - investment
+      - segmentation
+    classification: "Analytical Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: Investment Corporate Snapshot
+          type: internal-system
+          description: "Provides raw company financial and descriptive attributes"
+      downstream:
+        - name: Risk Assessment Models
+          type: data-product
+          description: "Uses clustering outputs for peer risk comparison"
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "Volume must be within expected range"
+    retention:
+      period: "60 months"
+      rationale: "Supports longitudinal benchmarking and regulatory audit needs"
+
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: "Contributes"
+        reason: "Provides structured, high-quality data for risk aggregation and reporting"
+      - regulation: BASEL IV
+        status: "N/A"
+        reason: "No direct capital calculation inputs"
+      - regulation: EBA
+        status: "Contributes"
+        reason: "Supports governance and classification standards"
+      - regulation: DORA
+        status: "Contributes"
+        reason: "Ensures availability and resilience via SLA"
+      - regulation: AML
+        status: "N/A"
+        reason: "No KYC or transaction monitoring data"
+      - regulation: MiFID II
+        status: "N/A"
+        reason: "No trading or investor protection data"
+      - regulation: PSD2
+        status: "N/A"
+        reason: "No payment services data"
+      - regulation: GDPR
+        status: "N/A"
+        reason: "No personal data present"
+      - regulation: AI Act
+        status: "Contributes"
+        reason: "Provides structured input for clustering and ML segmentation"
+      - regulation: IFRS 9
+        status: "N/A"
+        reason: "No credit risk staging or ECL calculations"
+
+    ai_act:
+      is_ai_input: true
+      is_ai_output: false
+      high_risk_classification: false
+      fria_required: false
+      fria_notes: "Used as input for clustering models without impact on individual rights"
+
+  glossary_entry:
+    term: "Investment Peer Benchmark Profile"
+    definition: "A dataset grouping companies into clusters based on financial and operational similarity for benchmarking and investment analysis."
+    fibo_class: "fibo-fnd-rel-rel:Classification"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/Relations/Relations/Classification"
+    domain: Investment
+    dawiso_status: draft
+    steward: Ondřej Houdek - houo04@vse.cz
+    synonyms:
+      - "Profil srovnatelných investičních společností"
+    acronyms:
+      - "IPBP"
+    related_capability: "Investment Analysis"
+    related_terms:
+      - "Company Segmentation"
+      - "Peer Group Analysis"
