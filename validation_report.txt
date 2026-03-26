@@ -2,9 +2,27 @@
  Horizon AI Bank — Data Contract Validation Report (prompt v3.3)
 ═══════════════════════════════════════════════════════════
 
+  ✅  team1-digi/retail_sales_vehicle_insurance_propensity_state.yaml  →  all checks passed
+
+  ✅  team1-digi/strategy_marketing_performance_acquisition_aggregation.yaml  →  all checks passed
+
   ✅  team2-Data-Governance/data-governance-contract-inventory-state.yml  →  all checks passed
 
+  ✅  team4-steering-data/accounting_deviation_snapshot.yml  →  all checks passed
+
+  ✅  team6-strategy/strategy_knowledge_snapshot.yaml  →  all checks passed
+
+  ✅  team6-strategy/strategy_market_rate_snapshot.yaml  →  all checks passed
+
+  ✅  team7-gen-ai/credit-risk-credit-memo-profile.yml  →  all checks passed
+
+  ✅  team7-gen-ai/credit-risk-early-warning-history.yml  →  all checks passed
+
+  ✅  team8-investment-banking/investment_corporate_snapshot.yml  →  all checks passed
+
+  ✅  team8-investment-banking/investment_peer_benchmark_profile.yml  →  all checks passed
+
 ───────────────────────────────────────────────────────────
- Files checked : 1
+ Files checked : 10
  Total issues  : 0
 ───────────────────────────────────────────────────────────
