@@ -1,27 +1,27 @@
 dataContractSpecification: 1.1.0
 
-id: urn:nova-banka:strategy:ai-knowledge-base:v0.1.0
+id: urn:nova-banka:strategy:knowledge-base:snapshot:v0.1.0
 
 info:
-  title: DP_STRATEGY_KNOWLEDGE_SNAPSHOT
-  name: Strategy Knowledge Snapshot
+  title: Strategy Knowledge Base Snapshot
+  name: Strategy Knowledge Base Snapshot
   product_type: STATE
   maturity_score: 30%
   version: 0.1.0
   status: draft
   description: |
-    Data latency: On-demand — báze se aktualizuje manuálně při vydání nového strategického dokumentu, bez pravidelného rozvrhu.
-    Business Entity: Chunk strategického dokumentu
-    Business Purpose: Znalostní báze strategického AI asistenta banky Horizon. Obsahuje chunky textu extrahované ze strategických dokumentů (poslání banky, KPI cíle, cílové segmenty, produkty, komunikační kanály). Slouží jako zdroj dat pro RAG pipeline AI asistenta.
-    Consumers: RAG pipeline strategického AI asistenta (interní, Team 6). Ostatní týmy přistupují ke strategickým znalostem přes rozhraní asistenta, nikoli přímo přes tento data produkt.
-    Data Sources: Strategické dokumenty banky Horizon ve formátu PDF (např. Horizon-bank-strategy-2025.pdf). Dokumenty jsou manuálně schvalovány a nahrávány týmem Strategie.
+    Data latency: On-demand — the knowledge base is updated manually upon release of a new strategic document, with no regular schedule.
+    Business Entity: Strategic Document Chunk
+    Business Purpose: Knowledge base for the Horizon Bank strategic AI assistant. Contains text chunks extracted from strategic documents (bank mission, KPI targets, target segments, products, communication channels). Serves as the data source for the AI assistant's RAG pipeline.
+    Consumers: RAG pipeline of the strategic AI assistant (internal, Team 6). Other teams access strategic knowledge through the assistant interface, not directly through this data product.
+    Data Sources: Horizon Bank strategic documents in PDF format (e.g. Horizon-bank-strategy-2025.pdf). Documents are manually approved and uploaded by the Strategy team.
 
   x-regulatory:
     gdpr_relevant: false
     critical_data_element: true
     regulatory_framework: "None"
 
-  owner: "Nova Banka \\ Strategie"
+  owner: "Nova Banka \\ Strategy"
   contact:
     name: Valeria Lukomskaja
     email: xlukv00@vse.cz
@@ -44,7 +44,7 @@ servers:
 
 schema:
   - name: strategy_knowledge_snapshot
-    description: "Znalostní báze strategického AI asistenta banky Horizon. Obsahuje chunky textu extrahované ze strategických dokumentů."
+    description: "Knowledge base for the Horizon Bank strategic AI assistant. Contains text chunks extracted from strategic documents."
 
     fields:
       - name: record_id
@@ -75,7 +75,7 @@ schema:
 
       - name: chunk_id
         type: string
-        description: "unikátní ID, není citlivé"
+        description: "Unique chunk identifier (UUID v4); not sensitive"
         required: true
         unique: true
         x-compliance:
@@ -84,7 +84,7 @@ schema:
 
       - name: source_document
         type: string
-        description: "název zdrojového dokumentu, není citlivé"
+        description: "Name of the source strategic document (e.g. Horizon-bank-strategy-2025.pdf); not sensitive"
         required: true
         x-compliance:
           is_pii: false
@@ -92,7 +92,7 @@ schema:
 
       - name: page_number
         type: integer
-        description: "číslo stránky, není citlivé"
+        description: "Page number in the source document; not sensitive"
         required: true
         x-compliance:
           is_pii: false
@@ -100,7 +100,7 @@ schema:
 
       - name: section_title
         type: string
-        description: "název sekce dokumentu, není citlivé"
+        description: "Title of the document section the chunk belongs to; not sensitive"
         required: false
         x-compliance:
           is_pii: false
@@ -108,7 +108,7 @@ schema:
 
       - name: content
         type: string
-        description: "text chunku, interně citlivé (obsahuje strategické informace banky)"
+        description: "Text content of the chunk; internally sensitive — contains proprietary strategic information of the bank"
         required: true
         x-compliance:
           is_pii: false
@@ -116,7 +116,7 @@ schema:
 
       - name: content_length
         type: integer
-        description: "počet znaků, není citlivé"
+        description: "Character count of the chunk content; not sensitive"
         required: true
         x-compliance:
           is_pii: false
@@ -124,7 +124,7 @@ schema:
 
       - name: created_at
         type: timestamp
-        description: "timestamp vytvoření, není citlivé"
+        description: "Timestamp of record creation; not sensitive"
         required: true
         x-compliance:
           is_pii: false
@@ -132,7 +132,7 @@ schema:
 
       - name: updated_at
         type: timestamp
-        description: "timestamp aktualizace, není citlivé"
+        description: "Timestamp of last record update; not sensitive"
         required: false
         x-compliance:
           is_pii: false
@@ -147,18 +147,25 @@ quality:
 
   - rule: not_null
     field: chunk_id
-    description: "chunk_id musí být unikátní a nesmí být null"
+    description: "chunk_id must be unique and not null"
 
   - rule: unique
     field: chunk_id
+    description: "No duplicate chunks allowed"
 
   - rule: not_null
     field: content
 
+  - rule: not_null
+    field: source_document
+
+  - rule: not_null
+    field: page_number
+
   - rule: row_count
     min: 50
     max: 50000
-    description: "Detects data distribution anomalies (volume drop/spike)"
+    description: "Detects data distribution anomalies (volume drop/spike). Expected range based on typical strategic document corpus size for a mid-sized bank."
 
   - rule: accepted_values
     field: region
@@ -167,28 +174,18 @@ quality:
   - rule: accepted_values
     field: source_document
     values_from: "strategy.approved_documents_reference"
-    description: "source_document musí být ze seznamu schválených dokumentů"
+    description: "source_document must be from the list of approved strategic documents"
 
   - rule: range
     field: content_length
     min: 50
     max: 2000
-    description: "content musí mít min. 50 a max. 2000 znaků"
+    description: "Each chunk must contain between 50 and 2000 characters to ensure meaningful RAG retrieval"
 
-  - rule: not_null
-    field: source_document
-
-  - rule: not_null
-    field: page_number
-
-  - rule: unique
-    field: chunk_id
-    description: "žádné duplicitní chunky"
-    
 sla:
   availability: 99.5%
-  data_latency: "On-demand — báze se aktualizuje manuálně při vydání nového strategického dokumentu, bez pravidelného rozvrhu."
-  retention_period: "24 měsíců"
+  data_latency: "On-demand — updated manually upon release of a new strategic document, with no regular schedule."
+  retention_period: "24 months"
 
 x-dawiso:
   data_product:
@@ -198,36 +195,36 @@ x-dawiso:
     product_owner: "Valeria Lukomskaja - xlukv00@vse.cz"
     data_steward: "Valeria Lukomskaja - xlukv00@vse.cz"
     tags:
-      - strategie
+      - strategy
       - rag
-      - ai-asistent
-      - znalostni-baze
+      - ai-assistant
+      - knowledge-base
       - nlp
     classification: "Strategy Data Product"
     data_classification: Confidential
     lineage:
       upstream:
-        - name: "Strategické dokumenty banky Horizon ve formátu PDF (např. Horizon-bank-strategy-2025.pdf)"
+        - name: "Horizon Bank Strategic Documents (PDF)"
           type: internal-system
-          description: "Dokumenty jsou manuálně schvalovány a nahrávány týmem Strategie."
+          description: "Documents are manually approved and uploaded by the Strategy team (e.g. Horizon-bank-strategy-2025.pdf)."
       downstream:
-        - name: "RAG pipeline strategického AI asistenta (interní, Team 6)"
+        - name: "Strategic AI Assistant RAG Pipeline (internal, Team 6)"
           type: data-product
-          description: "Ostatní týmy přistupují ke strategickým znalostem přes rozhraní asistenta, nikoli přímo přes tento data produkt."
+          description: "Other teams access strategic knowledge through the assistant interface, not directly through this data product."
     rules_ko:
       - "record_id must be a valid UUID v4"
-      - "chunk_id musí být unikátní a nesmí být null"
-      - "content musí mít min. 50 a max. 2000 znaků"
-      - "source_document musí být ze seznamu schválených dokumentů"
-      - "žádné duplicitní chunky"
+      - "chunk_id must be unique and not null"
+      - "content must be between 50 and 2000 characters"
+      - "source_document must be from the list of approved documents"
+      - "No duplicate chunks permitted"
       - "Volume must be within expected range (50–50000 rows)"
     retention:
-      period: "24 měsíců"
-      rationale: "Strategické dokumenty mají typický plánovací horizont 2 roky; starší chunky jsou nahrazeny aktualizovanými vydáními strategie."
+      period: "24 months"
+      rationale: "Strategic documents have a typical planning horizon of 2 years; older chunks are replaced by updated strategy releases."
 
 glossary_entry:
-  term: "Chunk strategického dokumentu"
-  definition: "Znalostní báze strategického AI asistenta banky Horizon. Obsahuje chunky textu extrahované ze strategických dokumentů (poslání banky, KPI cíle, cílové segmenty, produkty, komunikační kanály). Slouží jako zdroj dat pro RAG pipeline AI asistenta."
+  term: "Strategic Document Chunk"
+  definition: "A discrete text segment extracted from an official Horizon Bank strategic document (such as mission statement, KPI targets, target customer segments, products, or communication channels), stored as a unit in the knowledge base to support retrieval-augmented generation (RAG) by the bank's strategic AI assistant."
   fibo_class: "fibo-fnd-arr-doc:Document"
   fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Documents/Document"
   domain: Strategy
@@ -236,14 +233,14 @@ glossary_entry:
   synonyms:
     - Knowledge Chunk
     - RAG Chunk
-    - Textový segment
+    - Text Segment
   acronyms:
     - RAG
     - KB
-  related_capability: "Strategický AI asistent / Knowledge Management"
+  related_capability: "Strategic AI Assistant / Knowledge Management"
   related_terms:
-    - "RAG pipeline"
-    - "Vektorové embedding"
-    - "Strategický dokument"
-    - "Znalostní báze"
-  kg_triple: "StrategyKnowledgeSnapshot --contains--> ChunkStrategickehoDokumentu --extractedFrom--> StrategickyDokumentHorizonBanky"
+    - "RAG Pipeline"
+    - "Vector Embedding"
+    - "Strategic Document"
+    - "Knowledge Base"
+  kg_triple: "StrategyKnowledgeSnapshot --contains--> StrategicDocumentChunk --extractedFrom--> HorizonBankStrategicDocument"
