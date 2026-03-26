@@ -1,5 +1,5 @@
 """
-validate_contracts.py — Nova Banka Data Mesh
+validate_contracts.py — Horizon Banka Data Mesh
 Validates all Data Contract YAML files against prompt v3.3 requirements.
 Checks: core structure, x-compliance (incl. regulatory_basis), extended GDPR,
         regulatory_mapping (10 regulations), AI Act / FRIA, and FIBO glossary entry.
@@ -233,7 +233,7 @@ def main():
     total_issues = 0
     report_lines = [
         "═══════════════════════════════════════════════════════════",
-        " Nova Banka — Data Contract Validation Report (prompt v3.3)",
+        " Horizon Banka — Data Contract Validation Report (prompt v3.3)",
         "═══════════════════════════════════════════════════════════",
         "",
     ]

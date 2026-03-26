@@ -1,5 +1,5 @@
 ═══════════════════════════════════════════════════════════
- Nova Banka — Data Contract Validation Report (prompt v3.3)
+ Horizon Banka — Data Contract Validation Report (prompt v3.3)
 ═══════════════════════════════════════════════════════════
 
   ✅  team2-Data-Governance/data-governance-contract-inventory-state.yml  →  all checks passed
