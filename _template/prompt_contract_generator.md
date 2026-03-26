@@ -58,11 +58,11 @@ Fill the YAML template. MANDATORY ADDITIONS:
 
 3. REGULATORY FRAMEWORK: In the info block, deduce and assign the correct 'Regulatory Framework' (e.g., "GDPR", "BCBS 239", "IFRS 9", or "None") based on the presence of PII or the financial nature of the data.
 
-4. REGULATORY MAPPING: In the x-dawiso block, add a regulatory_mapping section.
+4. REGULATORY MAPPING: Under x-dawiso.data_product, add a regulatory_mapping section (same indentation level as lineage, rules_ko, retention).
    For each of the 10 standard Horizon AI Bank regulations, assess whether the data product
    contributes to, is restricted by, both, or is not applicable, and provide a brief reason.
 
-5. AI ACT: In the x-dawiso block, add an ai_act section.
+5. AI ACT: Under x-dawiso.data_product, add an ai_act section (same indentation level as regulatory_mapping).
    Assess whether the data product is an input to or output of an AI system.
    If yes, flag FRIA as required and describe the high-risk classification.
 
@@ -109,16 +109,16 @@ info:
 servers:
   PRODUCTION:
     type: databricks
-    host: nova-banka-prod.cloud.databricks.com
+    host: horizon-ai-bank-prod.cloud.databricks.com
     environment: production
-    catalog: datamesh-nova-banka-prod
+    catalog: datamesh-horizon-ai-bank-prod
     schema: <domain-prod>
     table: <dp_table_name>
   DEVELOPMENT:
     type: databricks
-    host: nova-banka-dev.cloud.databricks.com
+    host: horizon-ai-bank-dev.cloud.databricks.com
     environment: development
-    catalog: datamesh-nova-banka-dev
+    catalog: datamesh-horizon-ai-bank-dev
     schema: <domain-dev>
     table: <dp_table_name>
 

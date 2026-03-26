@@ -311,7 +311,7 @@ Strategy KPI Aggregation                      (3 slova ✓)
 ```yaml
 dataContractSpecification: 1.1.0
 
-id: urn:businessdomain:nova-banka:strategy:kpi-aggregation
+id: urn:businessdomain:horizon-ai-bank:strategy:kpi-aggregation
 
 info:
   title: DP_STRATEGY_KPI_AGGREGATION
@@ -342,26 +342,29 @@ info:
     gdpr_relevant: false
     critical_data_element: true
     regulatory_framework: "BCBS 239"
+    data_minimization: "true — only fields required for KPI reporting are collected"
+    right_to_erasure: "N/A — no personal data present"
+    purpose_limitation: "true — processing limited to strategic KPI reporting"
 
   owner: Horizon AI Bank \ Team6 \ Strategy
   contact:
     name: Jan Novák
-    email: jan.novak@nova-banka.cz
+    email: jan.novak@horizon-ai-bank.cz
 
 servers:
   PRODUCTION:
     type: databricks
-    host: nova-banka-prod.cloud.databricks.com
+    host: horizon-ai-bank-prod.cloud.databricks.com
     environment: production
-    catalog: datamesh-nova-banka-prod
+    catalog: datamesh-horizon-ai-bank-prod
     schema: strategy-prod
     table: dp_strategy_kpi_aggregation
 
   DEVELOPMENT:
     type: databricks
-    host: nova-banka-dev.cloud.databricks.com
+    host: horizon-ai-bank-dev.cloud.databricks.com
     environment: development
-    catalog: datamesh-nova-banka-dev
+    catalog: datamesh-horizon-ai-bank-dev
     schema: strategy-dev
     table: dp_strategy_kpi_aggregation
 
@@ -379,6 +382,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
 
       - name: business_date
         type: date
@@ -388,6 +392,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
 
       - name: region
         type: string
@@ -398,6 +403,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic partitioning"
 
       - name: kpi_name
         type: string
@@ -407,6 +413,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "Internal governance — strategic KPI identifier"
 
       - name: kpi_value
         type: decimal
@@ -416,6 +423,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "BCBS 239 — accuracy of financial performance data"
 
       - name: kpi_target
         type: decimal
@@ -425,6 +433,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "Internal governance — strategic target for performance comparison"
 
       - name: currency
         type: string
@@ -434,6 +443,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "Internal governance — currency denomination for financial KPIs"
 
       - name: created_at
         type: timestamp
@@ -443,6 +453,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "Internal governance — audit trail for record creation"
 
       - name: updated_at
         type: timestamp
@@ -452,6 +463,7 @@ schema:
         x-compliance:
           is_pii: false
           sensitivity: Internal
+          regulatory_basis: "Internal governance — audit trail for record updates"
 
 quality:
   - rule: not_null
@@ -484,7 +496,93 @@ sla:
   availability: 99.5%
   data_latency: D+1
   retention_period: 36 months
-  support_contact: jan.novak@nova-banka.cz
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Strategy
+    business_owner: Jan Novák - jan.novak@horizon-ai-bank.cz
+    product_owner: Jan Novák - jan.novak@horizon-ai-bank.cz
+    data_steward: Jan Novák - jan.novak@horizon-ai-bank.cz
+    tags:
+      - strategy
+      - kpi
+      - aggregation
+    classification: "Strategy Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: Core Banking System
+          type: internal-system
+          description: "Source of financial transaction data for KPI computation"
+        - name: Finance GL
+          type: internal-system
+          description: "Source of general ledger data for financial KPIs"
+      downstream:
+        - name: Board Reporting Dashboard
+          type: data-product
+          description: "Consumes KPI aggregates for strategic decision-making"
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "Volume must be within expected range"
+    retention:
+      period: "36 months"
+      rationale: "3-year KPI history supports trend analysis and regulatory audit requirements"
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Provides aggregated financial KPI data with documented lineage and quality rules"
+      - regulation: BASEL IV
+        status: N/A
+        reason: "No RWA or capital calculation inputs present"
+      - regulation: EBA
+        status: Contributes
+        reason: "Documented ownership and data governance support EBA data management guidelines"
+      - regulation: DORA
+        status: Contributes
+        reason: "SLA documentation supports ICT operational resilience requirements"
+      - regulation: AML
+        status: N/A
+        reason: "No transaction monitoring or KYC data present"
+      - regulation: MiFID II
+        status: N/A
+        reason: "No capital markets or investment product data present"
+      - regulation: PSD2
+        status: N/A
+        reason: "No payment services data present"
+      - regulation: GDPR
+        status: N/A
+        reason: "No personal data present — product contains only aggregated financial KPIs"
+      - regulation: AI Act
+        status: N/A
+        reason: "Product is not an input or output of an AI system"
+      - regulation: IFRS 9
+        status: Contributes
+        reason: "KPI data supports financial performance reporting relevant to IFRS 9 disclosures"
+    ai_act:
+      is_ai_input: false
+      is_ai_output: false
+      high_risk_classification: false
+      fria_required: false
+      fria_notes: "FRIA not required — product contains only aggregated financial KPIs with no AI processing."
+  glossary_entry:
+    term: "Strategic KPI Aggregation"
+    definition: "A pre-computed monthly aggregation of key performance indicators used for board-level strategic decision-making and performance management at Horizon AI Bank."
+    fibo_class: "fibo-fnd-gao-obj:StrategicObjective"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/GoalsAndObjectives/Objectives/"
+    domain: Strategy
+    dawiso_status: draft
+    steward: "Jan Novák - jan.novak@horizon-ai-bank.cz"
+    synonyms:
+      - KPI Report
+      - Strategic Performance Metrics
+    acronyms:
+      - KPI
+    related_capability: "Strategic Performance Management"
+    related_terms:
+      - "Business KPI"
+      - "Financial Performance"
+      - "Board Reporting"
 ```
 
 ---
