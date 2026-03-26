@@ -1,0 +1,312 @@
+dataContractSpecification: 1.1.0
+id: esg-score-v0-1-0
+info:
+  title: ESG score
+  name: ESG score
+  product_type: AGGREGATION
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Data latency: D+1
+    Business Entity: Building (Budova)
+    Business Purpose: Calculation of ESG score for credit approval and collateral valuation purposes.
+    Consumers: Client Services (Obsluha klienta)
+    Data Sources: ICM Gen AI, public registries (VÚV TGM, CHMI, ČSÚ, PČR)
+
+x-regulatory:
+  gdpr_relevant: false
+  critical_data_element: true
+  regulatory_framework: "BCBS 239"
+  data_minimization: "true — only fields strictly necessary for ESG score calculation and credit valuation are collected"
+  right_to_erasure: "false — no personal data is processed; erasure obligations do not apply"
+  purpose_limitation: "true — processing is strictly limited to ESG score computation for loan approval and collateral valuation"
+
+owner: Nova Banka
+
+contact:
+  name: Anna Spilková
+  email: spia05@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: esg_risk
+    table: esg_score
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: esg_risk
+    table: esg_score
+
+schema:
+  - name: esg_score
+    description: ESG score data for buildings used in credit approval and collateral valuation
+    fields:
+
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic partitioning"
+
+      - name: building_id
+        type: string
+        description: Unique identifier of the building (must not be null, must be unique)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — data lineage and traceability of risk-relevant collateral data"
+
+      - name: address
+        type: string
+        description: Physical address of the building used for ESG score computation
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL/2020/06 — collateral valuation; BCBS 239 — accurate identification of risk exposures"
+
+      - name: esg_score
+        type: float
+        description: Composite ESG score of the building on a scale of 0 to 100; must not be null
+        required: true
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL on loan origination and monitoring — ESG collateral assessment; BASEL IV — physical and transition climate risk in RWA calculation"
+
+      - name: quality_of_life_index
+        type: float
+        description: Index of quality of life for the building's location, sourced from ČSÚ (Czech Statistical Office)
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL/2022/03 — ESG risk integration in ICAAP; BCBS 239 — risk data aggregation"
+
+      - name: crime_index
+        type: float
+        description: Crime index for the building's location, sourced from PČR (Czech Police)
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV — social risk in collateral assessment; EBA GL on ESG risks — S-pillar indicators"
+
+      - name: flood_zone
+        type: string
+        description: Flood risk zone classification derived from VÚV TGM public registry
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV — climate-related physical risk; EBA GL/2022/03 — ESG risk integration in ICAAP"
+
+      - name: avg_temperature_5y
+        type: float
+        description: Average temperature over the last 5 years for the building's GPS location (°C), sourced from CHMI
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — risk data aggregation; EBA GL on ESG risks — climate physical risk indicators"
+
+      - name: data_source
+        type: string
+        description: Source system that provided the record (VÚV TGM, CHMI, ČSÚ, PČR, ICM Gen AI)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — data lineage traceability; Internal governance — source auditability"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+  - rule: not_null
+    field: building_id
+  - rule: unique
+    field: building_id
+  - rule: not_null
+    field: esg_score
+  - rule: range
+    field: esg_score
+    min: 0
+    max: 100
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+  - rule: row_count
+    min: 5000
+    max: 2000000
+    description: "Detects data distribution anomalies (volume drop/spike) — estimated based on Czech/Slovak building registry scope"
+
+sla:
+  availability: 99.5%
+  data_latency: D+1
+  retention_period: 36 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: ESG Risk
+    business_owner: Anna Spilková - spia05@vse.cz
+    product_owner: Anna Spilková - spia05@vse.cz
+    data_steward: Anna Spilková - spia05@vse.cz
+    tags:
+      - ESG
+      - ESG Score
+      - Climate Risk
+      - Social Risk
+      - Collateral Valuation
+      - AI-generated
+    classification: "ESG Risk Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: VÚV TGM
+          type: public-registry
+          description: "T.G. Masaryk Water Research Institute — source of flood zone classifications"
+        - name: CHMI
+          type: public-registry
+          description: "Czech Hydrometeorological Institute — source of historical temperature data"
+        - name: ČSÚ
+          type: public-registry
+          description: "Czech Statistical Office — source of quality of life index"
+        - name: PČR
+          type: public-registry
+          description: "Czech Police — source of crime index data"
+        - name: ICM Gen AI
+          type: internal-ai-system
+          description: "Internal generative AI model used to compute composite ESG score from location and building data"
+      downstream:
+        - name: Credit Approval System
+          type: data-product
+          description: "Consumes ESG score output for loan approval decisioning"
+        - name: ESG Reporting
+          type: data-product
+          description: "Consumes ESG score and sub-indicators for regulatory ESG disclosure"
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "building_id must not be null and must be unique"
+      - "esg_score must not be null and must be in range [0, 100]"
+      - "Volume must be within expected range (5 000 – 2 000 000 records)"
+    retention:
+      period: "36 months"
+      rationale: "Aligned with credit lifecycle and ESG audit requirements; consistent with EBA loan origination guidelines"
+
+  regulatory_mapping:
+    - regulation: BCBS 239
+      status: Contributes
+      reason: "Provides structured, traceable building risk data with documented lineage, data quality rules, and D+1 timeliness — directly supports risk data aggregation and reporting accuracy principles"
+    - regulation: BASEL IV
+      status: Contributes
+      reason: "ESG score aggregates physical climate risk (flood zone, temperature) and social risk (crime index) inputs that feed into RWA calculation under BASEL IV climate and ESG risk integration requirements"
+    - regulation: EBA
+      status: Contributes
+      reason: "Supports EBA Guidelines on loan origination and monitoring (GL/2020/06) and ESG risk integration (GL/2022/03) — composite ESG score is a direct ESG collateral indicator required for loan underwriting"
+    - regulation: DORA
+      status: Contributes
+      reason: "SLA (99.5% availability, D+1 latency) and data lineage documentation contribute to operational resilience requirements for critical data systems"
+    - regulation: AML
+      status: Contributes
+      reason: "Building ID, address, and crime index data can support property-based AML checks (e.g. real estate money laundering screening) and KYC-linked collateral verification workflows"
+    - regulation: MiFID II
+      status: "N/A"
+      reason: "No capital markets, investment product, or transaction reporting data is present in this product"
+    - regulation: PSD2
+      status: "N/A"
+      reason: "No payment services, open banking, or payment account data is present"
+    - regulation: GDPR
+      status: "N/A"
+      reason: "No personal data (PII) is processed — all fields relate to buildings and environmental/social metrics, not natural persons; GDPR obligations do not apply"
+    - regulation: AI Act
+      status: Contributes
+      reason: "This product is both an input to and an output of an AI system (ICM Gen AI). The ESG score is generated by a generative AI model used in credit approval decisions, which falls under the EU AI Act high-risk classification (Annex III — creditworthiness assessment)"
+    - regulation: IFRS 9
+      status: Contributes
+      reason: "ESG score and its sub-indicators (flood zone, temperature trend, crime index) may inform ECL model inputs and staging decisions under IFRS 9 forward-looking macroeconomic and climate scenario adjustments"
+
+  ai_act:
+    is_ai_input: true
+    is_ai_output: true
+    high_risk_classification: true
+    fria_required: true
+    fria_notes: >
+      This data product is both an input to and an output of the ICM Gen AI system, which automatically computes
+      ESG scores used in credit approval and collateral valuation decisions. Under EU AI Act Annex III (Article 6),
+      AI systems used for creditworthiness assessment and loan evaluation are classified as HIGH-RISK.
+      Affected persons: property owners and loan applicants whose collateral is evaluated via AI-generated ESG scoring.
+      Rights at risk: right to non-discrimination (biased crime index or quality-of-life data may disadvantage
+      certain geographic communities), right to explanation (automated ESG score affecting credit outcomes),
+      right to contest automated decisions.
+      Bias mitigation measures required: geographic coverage audit of ČSÚ and PČR data completeness and
+      representativeness, regular back-testing of AI-generated ESG scores against independent assessments,
+      human-in-the-loop override for credit decisions where ESG score is a decisive factor,
+      transparency documentation for affected clients on scoring methodology.
+      A Fundamental Rights Impact Assessment (FRIA) must be conducted prior to production deployment.
+
+glossary_entry:
+  term: "ESG Score (ESG skóre)"
+  definition: >
+    A composite numerical score (0–100) representing the Environmental, Social, and Governance
+    performance of a building, computed using GPS-based location data, public environmental and
+    social registries, and AI inference. Used by Nova Banka to assess collateral ESG quality
+    in the context of credit approval and regulatory ESG risk reporting.
+    Derived from EBA ESG risk guidelines and EU Taxonomy Regulation criteria.
+  fibo_class: "fibo-loan:CollateralCharacteristic"
+  fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/CollateralCharacteristic"
+  domain: ESG Risk
+  dawiso_status: draft
+  steward: Anna Spilková - spia05@vse.cz
+  synonyms:
+    - ESG Rating
+    - Environmental Social Governance Score
+    - Sustainability Score
+  acronyms:
+    - ESG
+  related_capability: "Collateral ESG Assessment / Climate and Social Risk Scoring"
+  related_terms:
+    - "Flood Zone Classification"
+    - "Climate Physical Risk"
+    - "Quality of Life Index"
+    - "Crime Index"
+    - "Collateral Valuation"
+    - "Building Identifier (ID budovy)"
+    - "AI Act High-Risk System"
+    - "Energetický štítek (Energy Performance Label)"
