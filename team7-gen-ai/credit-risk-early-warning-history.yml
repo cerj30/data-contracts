@@ -1,0 +1,490 @@
+dataContractSpecification: 1.1.0
+
+id: urn:businessdomain:horizon-ai-bank:credit-risk:credit-risk-early-warning-history
+
+info:
+  title: DP_CREDIT_RISK_EARLY_WARNING_HISTORY
+  name: Credit Risk Early Warning History
+  product_type: EVENT
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Immutable event log of AI-generated early warning risk signals indicating
+    potential deterioration of credit risk for corporate clients. Each record
+    represents one alert linked to a client IČO, containing probability of
+    default and an AI-generated next best action for the risk manager.
+    Triggered by ISIR insolvency filings, credit limit utilisation spikes,
+    macroeconomic deterioration, or negative news signals.
+
+    Data latency: Hybrid — streaming <15 min for ISIR critical events;
+                  Daily EOD batch (D+1 by 08:00 CET) for CBS, ČNB macro, news feed.
+    Business Entity:  Alert Event (linked to Company IČO)
+    Business Purpose: Enable proactive risk identification in the portfolio before
+                      client default, protecting capital and reducing NPL ratio.
+    Consumers:        Risk Manager (CRO), Portfolio Management, Early Warning Team,
+                      Downstream IT (Power BI, AML)
+    Data Sources:     Insolvency Register (ISIR), ČNB macro data,
+                      News feed (Seznam.cz, Novinky.cz), Core Banking System
+
+    Filter Rules:
+    * One record per alert event — immutable, no updates allowed.
+    * Only alerts linked to active corporate clients (client_ico NOT NULL).
+    * source_reference must always be populated — zero tolerance for unsourced alerts.
+
+    Use Cases:
+    * UC1 - Real-time insolvency filing detection and alert generation
+    * UC2 - Daily portfolio risk monitoring dashboard for CRO
+    * UC3 - AI next-best-action recommendation for risk mitigation
+
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true — only fields required for early warning alerting are collected"
+    right_to_erasure: "false — immutable event log, retention required per BCBS 239 (60 months)"
+    purpose_limitation: "true — data processed exclusively for credit risk early warning monitoring"
+
+  owner: Horizon AI Bank \ Tým 7 \ Credit Risk
+  contact:
+    name: Vlada Indiukova
+    email: indv00@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: credit-risk-prod
+    table: dp_credit_risk_early_warning_history
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: credit-risk-dev
+    table: dp_credit_risk_early_warning_history
+
+schema:
+  - name: dp_credit_risk_early_warning_history
+    description: >
+      Immutable event log — one row per early warning alert per client.
+      Records must never be updated or deleted after creation.
+    fields:
+
+      # ── System fields ──────────────────────────────────────
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        example: "550e8400-e29b-41d4-a716-446655440000"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        example: "2024-01-31"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region — allowed values CZ or SK
+        required: true
+        enum: [CZ, SK]
+        example: "CZ"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic partitioning"
+
+      - name: created_at
+        type: timestamp
+        description: Record creation timestamp (UTC) — immutable after insert
+        required: true
+        example: "2024-01-31T08:00:00Z"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — audit trail for risk event logging"
+
+      # ── Alert Event fields ──────────────────────────────────
+      - name: alert_id
+        type: string
+        description: Unique alert identifier (UUID v4)
+        required: true
+        unique: true
+        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — unique identifier for alert deduplication"
+
+      - name: alert_timestamp
+        type: timestamp
+        description: Exact timestamp when the alert was generated (UTC)
+        required: true
+        example: "2024-01-31T07:42:00Z"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness requirement for risk signal delivery"
+
+      - name: client_ico
+        type: string
+        description: >
+          Client company registration number — exactly 8 numeric characters,
+          leading zeros preserved. Zero tolerance for NULL.
+        required: true
+        example: "01234567"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — unique client identifier for risk aggregation"
+
+      - name: alert_severity
+        type: string
+        description: Severity level of the alert
+        required: true
+        enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        example: "HIGH"
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          legal_basis: Contractual
+          regulatory_basis: "Internal governance — alert triage and escalation routing"
+
+      - name: trigger_type
+        type: string
+        description: Classification of the event that triggered the alert
+        required: true
+        enum: [INSOLVENCY_FILING, LIMIT_UTILISATION, MACRO_DETERIORATION, NEWS_SIGNAL]
+        example: "INSOLVENCY_FILING"
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          legal_basis: Contractual
+          regulatory_basis: "IFRS 9 — SICR trigger classification. BCBS 239 — risk signal categorisation"
+
+      - name: source_reference
+        type: string
+        description: >
+          Verifiable link or reference to the source event — zero tolerance for NULL.
+          Anti-hallucination KO control. Example: ISIR filing URL.
+        required: true
+        example: "https://isir.justice.cz/isir/common/index.do?id=12345"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EU AI Act Art. 13 — transparency and traceability of High-Risk AI output"
+
+      - name: source_system
+        type: string
+        description: Name of the source system that triggered the alert
+        required: true
+        example: "ISIR"
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — data lineage from source to alert"
+
+      - name: probability_of_default
+        type: decimal
+        description: AI-estimated probability of client default (0–100 %)
+        required: false
+        example: 23.5
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          legal_basis: Contractual
+          regulatory_basis: "BASEL IV — PD input for IRB approach. IFRS 9 — ECL staging input"
+
+      - name: next_best_action
+        type: string
+        description: AI-generated recommended action for the risk manager
+        required: false
+        example: "Escalate to CRO — insolvency filing detected"
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          legal_basis: Contractual
+          regulatory_basis: "EU AI Act — Human-in-the-loop advisory output. EBA — documented risk response"
+
+      - name: is_hit
+        type: boolean
+        description: >
+          Indicates whether the alert resulted in a confirmed risk hit —
+          populated by risk manager after review.
+        required: true
+        example: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — Early Warning Hit Rate KPI measurement"
+
+      # ── Client context snapshot (denormalized for immutable log) ──
+      - name: archetype_at_alert
+        type: string
+        description: >
+          Client archetype at the time of alert generation — denormalized for
+          immutable event log. Preserves state at alert creation time even if
+          source data changes later.
+        required: false
+        enum: [healthy, watch, distressed]
+        example: "watch"
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          legal_basis: Contractual
+          regulatory_basis: "BASEL IV — risk classification at point-in-time for audit trail"
+
+      - name: utilisation_pct_at_alert
+        type: decimal
+        description: >
+          Credit utilisation percentage at time of alert — denormalized context
+          for LIMIT_UTILISATION trigger type.
+        required: false
+        example: 87.5
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          legal_basis: Contractual
+          regulatory_basis: "BCBS 239 — point-in-time risk data for audit trail"
+
+      - name: company_name
+        type: string
+        description: Company name at time of alert — denormalized for immutable log
+        required: false
+        example: "ACME s.r.o."
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — human-readable context for risk manager"
+
+quality:
+  - rule: not_null
+    field: record_id
+    description: "Record ID must not be empty"
+
+  - rule: unique
+    field: record_id
+    description: "Every record must have a unique ID"
+
+  - rule: not_null
+    field: alert_id
+    description: "Alert ID must not be empty"
+
+  - rule: unique
+    field: alert_id
+    description: "Every alert must have a unique ID"
+
+  - rule: not_null
+    field: client_ico
+    description: "DQ-CM-01 — Client IČO must not be NULL"
+
+  - rule: regex
+    field: client_ico
+    pattern: "^[0-9]{8}$"
+    description: "DQ-CM-01 — client_ico must be exactly 8 numeric characters"
+
+  - rule: not_null
+    field: source_reference
+    description: "DQ-EW-01 — Anti-hallucination KO rule — zero tolerance for unsourced alerts"
+
+  - rule: accepted_values
+    field: trigger_type
+    values: [INSOLVENCY_FILING, LIMIT_UTILISATION, MACRO_DETERIORATION, NEWS_SIGNAL]
+    description: "DQ-EW-01 — trigger_type must be one of 4 allowed values"
+
+  - rule: accepted_values
+    field: alert_severity
+    values: [LOW, MEDIUM, HIGH, CRITICAL]
+    description: "alert_severity must be one of: LOW, MEDIUM, HIGH, CRITICAL"
+
+  - rule: range
+    field: probability_of_default
+    min: 0
+    max: 100
+    description: "PD must be between 0 and 100 %"
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+    description: "Region must be CZ or SK"
+
+  - rule: row_count
+    min: 1
+    max: 5000
+    description: "Anomaly Detection — expected 1–5000 alerts per day"
+
+sla:
+  availability: 99.5%
+  data_latency: "Hybrid — streaming <15 min (ISIR); D+1 by 08:00 CET (batch)"
+  retention_period: 60 months
+  support_contact: indv00@vse.cz
+  notice_period: P3M
+
+terms:
+  usage: |
+    Authorized for: Risk Manager (CRO), Portfolio Management,
+    Early Warning Team, Downstream IT (Power BI, AML).
+    Data must not be shared outside approved consumer list without
+    Data Product Owner consent.
+  limitations: |
+    Immutable event log — records must not be updated or deleted after creation.
+    source_reference is mandatory — alerts without source must be rejected at ingestion.
+    AI output is advisory only — risk manager must confirm or reject each alert.
+  noticePeriod: "P3M"
+
+servicelevels:
+  freshness:
+    description: "Streaming for ISIR events — alert available within 15 minutes. Daily EOD batch for ČNB macro, news, CBS — available by 08:00 CET D+1."
+  availability:
+    description: "99.5% availability for Risk Manager (CRO), Portfolio Management, Early Warning Team."
+  latency:
+    description: "ISIR: <15 min end-to-end. Batch sources: D+1 maximum."
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Credit Risk
+    business_owner: Chief Risk Officer (CRO)
+    product_owner: Vlada Indiukova — indv00@vse.cz
+    data_steward: Vlada Indiukova — indv00@vse.cz
+    tags:
+      - credit-risk
+      - event-data
+      - early-warning
+      - alert-log
+      - ai-generated
+    classification: "Consumer-aligned Data Product"
+    data_classification: Confidential
+    lineage:
+      upstream:
+        - name: Insolvency Register (ISIR)
+          type: external-registry
+          description: "Real-time insolvency filings — INSOLVENCY_FILING trigger, streaming <15 min"
+        - name: ČNB Macro Data
+          type: external-registry
+          description: "Macroeconomic indicators — MACRO_DETERIORATION trigger, daily EOD"
+        - name: News Feed (Seznam.cz, Novinky.cz)
+          type: external-registry
+          description: "News signals — NEWS_SIGNAL trigger, daily EOD"
+        - name: Core Banking System
+          type: internal-system
+          description: "Credit limit utilisation — LIMIT_UTILISATION trigger, daily EOD"
+        - name: silver.credit_history
+          type: internal-silver-layer
+          description: "DPD and utilisation history for PD calculation"
+        - name: silver.transactions
+          type: internal-silver-layer
+          description: "Cash flow volatility signals for early warning detection"
+      downstream:
+        - name: Risk Manager Dashboard (CRO)
+          type: dashboard
+          description: "Real-time early warning alerts with next-best-action recommendations"
+        - name: Portfolio Management System
+          type: api
+          description: "Portfolio-level PD monitoring and NPL forecasting"
+        - name: Downstream IT — AML
+          type: internal-system
+          description: "AML monitoring — operational risk signals from escalated alerts"
+        - name: Downstream IT — Power BI
+          type: dashboard
+          description: "Early Warning Hit Rate KPI reporting"
+
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "alert_id must be a valid UUID v4"
+      - "client_ico must be exactly 8 numeric characters"
+      - "source_reference must never be NULL — anti-hallucination KO rule"
+      - "trigger_type must be one of: INSOLVENCY_FILING, LIMIT_UTILISATION, MACRO_DETERIORATION, NEWS_SIGNAL"
+      - "Daily alert volume must be within range 1–5000"
+      - "Records must never be updated or deleted after creation — immutable event log"
+
+    retention:
+      period: "60 months"
+      rationale: "BCBS 239 regulatory requirement for risk data aggregation and ČNB supervisory audit trail"
+
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Provides timely risk signals with full data lineage. source_reference ensures every alert is traceable to a verifiable source. Supports risk data aggregation and reporting requirements."
+      - regulation: BASEL IV
+        status: Contributes
+        reason: "PD values in alerts are inputs for IRB approach capital calculation. Early detection of credit deterioration supports accurate RWA assessment."
+      - regulation: EBA
+        status: Contributes
+        reason: "Checker Agent validates all alert outputs. Next Best Action documents the recommended risk response per EBA data governance requirements."
+      - regulation: DORA
+        status: Both
+        reason: "Contributes — streaming architecture with 99.5% SLA documented. Restricts — LLM Routing Gateway required to avoid vendor lock-in per ICT resilience requirements."
+      - regulation: AML
+        status: Contributes
+        reason: "Escalated operational risk alerts forwarded to AML monitoring system. Insolvency signals support KYC refresh triggers."
+      - regulation: MiFID II
+        status: N/A
+        reason: "Use case covers wholesale credit risk only — no investment advisory or capital markets data."
+      - regulation: PSD2
+        status: N/A
+        reason: "No payment gateway or open banking data — system focused on credit risk early warning."
+      - regulation: GDPR
+        status: Restricts
+        reason: "Alert context may reference company directors. Transient LLM Sessions (Zero Retention) applied — client data not used for model training. Data minimization enforced."
+      - regulation: AI Act
+        status: Both
+        reason: "Restricts — High-Risk AI system per Annex III, alerts cannot trigger autonomous actions. Contributes — Human-in-the-loop: risk manager confirms or rejects every alert. Full audit trail via source_reference."
+      - regulation: IFRS 9
+        status: Contributes
+        reason: "Early Warning Radar detects SICR triggers — insolvency filings, DPD spikes, utilisation anomalies. Enables timely reclassification to Stage 2/3 and ECL provisioning."
+
+    ai_act:
+      is_ai_input: true
+      is_ai_output: true
+      high_risk_classification: true
+      fria_required: true
+      fria_notes: >
+        High-Risk classification per EU AI Act Annex III — AI system influences
+        credit monitoring decisions affecting corporate clients' financial standing.
+        Affected persons: company directors, beneficial owners, employees of
+        monitored companies. Rights at risk: fair treatment, non-discrimination,
+        protection against incorrect risk classification. Bias mitigation measures:
+        (1) source_reference KO rule ensures every alert has a verifiable source —
+        no unsourced AI hallucinations permitted; (2) Human-in-the-loop — risk
+        manager must confirm every alert before action is taken; (3) is_hit field
+        tracks false positive rate for continuous model improvement; (4) Checker
+        Agent independently validates alert outputs before delivery to CRO.
+
+  glossary_entry:
+    term: "Credit Risk Early Warning Alert"
+    definition: >
+      An AI-generated risk signal indicating potential credit deterioration for
+      a corporate client, triggered by insolvency filings, credit limit utilisation
+      anomalies, macroeconomic deterioration, or negative news events.
+    fibo_class: "fibo-fnd-arr-asmt:RatingScore"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/Arrangements/Assessments/"
+    domain: Credit Risk
+    dawiso_status: draft
+    steward: Vlada Indiukova — indv00@vse.cz
+    synonyms:
+      - "EWS Alert"
+      - "Včasné varování"
+      - "Risk Trigger"
+    acronyms:
+      - "EWS"
+      - "EWR"
+    related_capability: "Credit Risk Monitoring"
+    related_terms:
+      - "Credit Risk Credit Memo"
+      - "Probability of Default"
+      - "Covenant Breach"
+      - "Next Best Action"
+      - "SICR"
