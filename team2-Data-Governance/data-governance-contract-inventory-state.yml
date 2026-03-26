@@ -1,5 +1,5 @@
 dataContractSpecification: 1.1.0
-id: urn:nova-banka:datamesh:team3:data-governance-contract-inventory-state
+id: urn:horizon-ai-bank:datamesh:team3:data-governance-contract-inventory-state
 info:
   title: Data Governance Contract Inventory State
   name: Data Governance Contract Inventory State
@@ -8,7 +8,7 @@ info:
   version: 0.1.0
   status: draft
   description: |
-    Centralized metadata inventory of all active Data Contracts across the Nova Banka
+    Centralized metadata inventory of all active Data Contracts across the Horizon AI bank
     Data Mesh. Captures compliance attributes, PII classification ratios, legal bases,
     product ownership, consumer mappings, and Databricks Unity Catalog paths for every
     registered data product across all business domains. The product is refreshed daily
@@ -22,8 +22,8 @@ info:
                       mesh-wide PII/legal-basis auditability.
     Consumers:        Data Governance Team, Enterprise Architects, Compliance Officers,
                       Data Stewards, Workshop Mentors
-    Data Sources:     bank-data-contracts GitHub repository, individual YAML contract
-                      files, Git commit history
+    Data Sources:     horizon-ai-bank-data-contracts GitHub repository, individual YAML
+                      contract files, Git commit history
   x-regulatory:
     gdpr_relevant: true
     critical_data_element: true
@@ -36,7 +36,7 @@ info:
       PII so those products can be targeted for erasure workflows."
     purpose_limitation: "true — processing is strictly limited to governance inventory,
       compliance reporting, and audit traceability; no analytical or commercial reuse."
-  owner: Nova Banka \ Team3 \ Data Governance & EA
+  owner: Horizon AI bank \ Team3 \ Data Governance & EA
   contact:
     name: Tomáš Kočí
     email: koct03@vse.cz
@@ -44,25 +44,25 @@ info:
 servers:
   PRODUCTION:
     type: databricks
-    host: nova-banka-prod.cloud.databricks.com
+    host: horizon-ai-bank-prod.cloud.databricks.com
     environment: production
-    catalog: datamesh-nova-banka-prod
+    catalog: datamesh-horizon-ai-bank-prod
     schema: data-governance-prod
     table: data_governance_contract_inventory_state
   DEVELOPMENT:
     type: databricks
-    host: nova-banka-dev.cloud.databricks.com
+    host: horizon-ai-bank-dev.cloud.databricks.com
     environment: development
-    catalog: datamesh-nova-banka-dev
+    catalog: datamesh-horizon-ai-bank-dev
     schema: data-governance-dev
     table: data_governance_contract_inventory_state
 
 schema:
   - name: data_governance_contract_inventory_state
     description: >
-      One row per registered Data Contract in the Nova Banka Data Mesh. Each row
+      One row per registered Data Contract in the Horizon AI bank Data Mesh. Each row
       represents the current governance snapshot of a single data product, sourced
-      from its YAML contract file in the bank-data-contracts GitHub repository.
+      from its YAML contract file in the horizon-ai-bank-data-contracts GitHub repository.
     fields:
       - name: record_id
         type: string
@@ -193,9 +193,9 @@ quality:
     max: 5000
     description: >
       Detects data distribution anomalies (volume drop/spike). Row count must match
-      the number of active contracts registered in the bank-data-contracts GitHub
-      repository. A count below 10 indicates a pipeline failure or mass deletion event;
-      a count above 5000 indicates a duplication anomaly.
+      the number of active contracts registered in the horizon-ai-bank-data-contracts
+      GitHub repository. A count below 10 indicates a pipeline failure or mass deletion
+      event; a count above 5000 indicates a duplication anomaly.
   - rule: accepted_values
     field: region
     values: [CZ, SK]
@@ -228,7 +228,7 @@ x-dawiso:
     data_classification: Confidential
     lineage:
       upstream:
-        - name: bank-data-contracts GitHub repository
+        - name: horizon-ai-bank-data-contracts GitHub repository
           type: internal-system
           description: "Source of all Data Contract YAML files; provides product_name,
             domain, pii_share, legal_basis, consumers, and databricks_path via
@@ -250,7 +250,7 @@ x-dawiso:
         - name: Enterprise Architecture Repository
           type: data-product
           description: "Uses domain, consumers, and databricks_path to maintain an
-            up-to-date map of the Nova Banka Data Mesh topology."
+            up-to-date map of the Horizon AI bank Data Mesh topology."
     rules_ko:
       - "record_id must be a valid UUID v4"
       - "Volume must be within expected range (10–5000 rows)"
@@ -262,7 +262,7 @@ x-dawiso:
       rationale: >
         GDPR Art. 5(2) accountability obligation requires organisations to demonstrate
         compliance throughout the lifecycle of data processing activities. A 60-month
-        retention aligns with Nova Banka's internal audit cycle (5 years) and ensures
+        retention aligns with Horizon AI bank's internal audit cycle (5 years) and ensures
         that historical governance posture can be reconstructed for regulatory
         examinations, DPA inquiries, or internal audit reviews.
 
@@ -285,7 +285,7 @@ x-dawiso:
         reason: >
           The product supports EBA data governance guidelines by providing a
           structured inventory of data ownership, stewardship, and domain
-          accountability across the Nova Banka Data Mesh.
+          accountability across the Horizon AI bank Data Mesh.
       - regulation: DORA
         status: Contributes
         reason: >
@@ -349,7 +349,7 @@ x-dawiso:
     definition: >
       A formal, machine-readable agreement that defines the schema, ownership,
       quality rules, SLA, and regulatory compliance posture of a data product
-      within the Nova Banka Data Mesh, serving as the authoritative governance
+      within the Horizon AI bank Data Mesh, serving as the authoritative governance
       artifact for a single business dataset.
     fibo_class: "fibo-fnd-agr-agr:Agreement"
     fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/Agreements/Agreements/Agreement"
