@@ -1,0 +1,301 @@
+dataContractSpecification: 1.1.0
+id: esg-energy-label-v0-1-0
+info:
+  title: Energetický štítek
+  name: Energetický štítek
+  product_type: AGGREGATION
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Data latency: D+1
+    Business Entity: Building (Budova)
+    Business Purpose: Automated estimation of energy performance of buildings for valuation and credit approval reporting. Based on GPS location, an energy label value is calculated for loan approval purposes.
+    Consumers: Client Services (Obsluha klienta)
+    Data Sources: ICM Gen AI, public registries (RUIAN, VÚV TGM, CHMI)
+
+x-regulatory:
+  gdpr_relevant: false
+  critical_data_element: true
+  regulatory_framework: "BCBS 239"
+  data_minimization: "true — only fields strictly necessary for energy label estimation and credit valuation are collected"
+  right_to_erasure: "false — no personal data is processed; erasure obligations do not apply"
+  purpose_limitation: "true — processing is strictly limited to energy performance estimation for loan approval and ESG reporting"
+
+owner: Nova Banka
+
+contact:
+  name: Anna Spilková
+  email: spia05@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: nova-banka-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-nova-banka-prod
+    schema: esg_risk
+    table: energy_label
+  DEVELOPMENT:
+    type: databricks
+    host: nova-banka-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-nova-banka-dev
+    schema: esg_risk
+    table: energy_label
+
+schema:
+  - name: energy_label
+    description: Energy performance label data for buildings used in credit approval and ESG reporting
+    fields:
+
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic partitioning"
+
+      - name: building_id
+        type: string
+        description: Unique identifier of the building (must not be null, must be unique)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — data lineage and traceability of risk-relevant collateral data"
+
+      - name: address
+        type: string
+        description: Physical address of the building used for GPS-based energy estimation
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL/2020/06 — collateral valuation; BCBS 239 — accurate identification of risk exposures"
+
+      - name: energy_label
+        type: string
+        description: Energy performance class of the building (A through G); must not be null
+        required: true
+        enum: [A, B, C, D, E, F, G]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL on loan origination and monitoring — ESG collateral assessment; BASEL IV — physical climate risk in RWA calculation"
+
+      - name: flood_zone
+        type: string
+        description: Flood risk zone classification derived from VÚV TGM / CHMI public registries
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV — climate-related physical risk; EBA GL/2022/03 — ESG risk integration in ICAAP"
+
+      - name: avg_temperature_5y
+        type: float
+        description: Average temperature over the last 5 years for the building's GPS location (°C), sourced from CHMI
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — risk data aggregation; EBA GL on ESG risks — climate physical risk indicators"
+
+      - name: gps_latitude
+        type: float
+        description: GPS latitude coordinate used for energy label computation
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — required input for AI-based energy estimation model"
+
+      - name: gps_longitude
+        type: float
+        description: GPS longitude coordinate used for energy label computation
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — required input for AI-based energy estimation model"
+
+      - name: data_source
+        type: string
+        description: Source system that provided the record (RUIAN, VÚV TGM, CHMI, ICM Gen AI)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — data lineage traceability; Internal governance — source auditability"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+  - rule: not_null
+    field: building_id
+  - rule: unique
+    field: building_id
+  - rule: not_null
+    field: energy_label
+  - rule: accepted_values
+    field: energy_label
+    values: [A, B, C, D, E, F, G]
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+  - rule: row_count
+    min: 5000
+    max: 2000000
+    description: "Detects data distribution anomalies (volume drop/spike) — estimated based on Czech/Slovak building registry scope"
+
+sla:
+  availability: 99.5%
+  data_latency: D+1
+  retention_period: 36 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: ESG Risk
+    business_owner: Anna Spilková - spia05@vse.cz
+    product_owner: Anna Spilková - spia05@vse.cz
+    data_steward: Anna Spilková - spia05@vse.cz
+    tags:
+      - ESG
+      - Energy Label
+      - Climate Risk
+      - Collateral Valuation
+      - AI-generated
+    classification: "ESG Risk Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: RUIAN
+          type: public-registry
+          description: "Czech national building and address registry — source of building IDs and addresses"
+        - name: VÚV TGM
+          type: public-registry
+          description: "T.G. Masaryk Water Research Institute — source of flood zone classifications"
+        - name: CHMI
+          type: public-registry
+          description: "Czech Hydrometeorological Institute — source of historical temperature data"
+        - name: ICM Gen AI
+          type: internal-ai-system
+          description: "Internal generative AI model used to estimate energy label from location and building data"
+      downstream:
+        - name: Credit Approval System
+          type: data-product
+          description: "Consumes energy label output for loan approval decisioning"
+        - name: ESG Reporting
+          type: data-product
+          description: "Consumes energy and climate risk fields for regulatory ESG disclosure"
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "building_id must not be null and must be unique"
+      - "energy_label must not be null and must be one of [A, B, C, D, E, F, G]"
+      - "Volume must be within expected range (5 000 – 2 000 000 records)"
+    retention:
+      period: "36 months"
+      rationale: "Aligned with credit lifecycle and ESG audit requirements; consistent with EBA loan origination guidelines"
+
+  regulatory_mapping:
+    - regulation: BCBS 239
+      status: Contributes
+      reason: "Provides structured, traceable building risk data with documented lineage, data quality rules, and D+1 timeliness — directly supports risk data aggregation and reporting accuracy principles"
+    - regulation: BASEL IV
+      status: Contributes
+      reason: "Energy label and flood zone data feed into physical climate risk assessment, which is a component of RWA calculation under BASEL IV climate risk integration requirements"
+    - regulation: EBA
+      status: Contributes
+      reason: "Supports EBA Guidelines on loan origination and monitoring (GL/2020/06) and ESG risk integration (GL/2022/03) — energy performance and flood zone are explicit collateral ESG indicators"
+    - regulation: DORA
+      status: Contributes
+      reason: "SLA (99.5% availability, D+1 latency) and data lineage documentation contribute to operational resilience requirements for critical data systems"
+    - regulation: AML
+      status: Contributes
+      reason: "Building ID and address data can support property-based AML checks (e.g. real estate money laundering screening) and KYC-linked collateral verification workflows"
+    - regulation: MiFID II
+      status: "N/A"
+      reason: "No capital markets, investment product, or transaction reporting data is present in this product"
+    - regulation: PSD2
+      status: "N/A"
+      reason: "No payment services, open banking, or payment account data is present"
+    - regulation: GDPR
+      status: "N/A"
+      reason: "No personal data (PII) is processed — all fields relate to buildings and environmental metrics, not natural persons; GDPR obligations do not apply"
+    - regulation: AI Act
+      status: Contributes
+      reason: "This product is both an input to and an output of an AI system (ICM Gen AI). The energy label is generated by a generative AI model used in credit approval decisions, which falls under the EU AI Act high-risk classification (Annex III — creditworthiness assessment)"
+    - regulation: IFRS 9
+      status: Contributes
+      reason: "Energy performance and climate risk indicators (flood zone, temperature trend) may inform ECL model inputs and staging decisions under IFRS 9 forward-looking macroeconomic scenario adjustments"
+
+  ai_act:
+    is_ai_input: true
+    is_ai_output: true
+    high_risk_classification: true
+    fria_required: true
+    fria_notes: >
+      This data product is both an input to and an output of the ICM Gen AI system, which automatically estimates
+      energy labels used in credit approval decisions. Under EU AI Act Annex III (Article 6), AI systems used for
+      creditworthiness assessment and loan evaluation are classified as HIGH-RISK.
+      Affected persons: property owners and loan applicants whose collateral is evaluated.
+      Rights at risk: right to non-discrimination (biased GPS/temperature data may disadvantage certain regions),
+      right to explanation (automated energy class assignment affecting credit outcomes).
+      Bias mitigation measures required: geographic coverage audit of RUIAN/CHMI data completeness,
+      regular validation of AI-generated labels against certified energy assessors,
+      human-in-the-loop override for credit decisions where energy label is a decisive factor.
+      A Fundamental Rights Impact Assessment (FRIA) must be conducted prior to production deployment.
+
+glossary_entry:
+  term: "Energetický štítek (Energy Performance Label)"
+  definition: >
+    A standardized classification (A through G) of the energy performance of a building,
+    estimated using GPS-based location data, public environmental registries, and AI inference.
+    Used by Nova Banka to assess collateral quality in the context of credit approval and ESG risk reporting.
+    Derived from EU Energy Performance of Buildings Directive (EPBD) standards.
+  fibo_class: "fibo-loan:CollateralCharacteristic"
+  fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/CollateralCharacteristic"
+  domain: ESG Risk
+  dawiso_status: draft
+  steward: Anna Spilková - spia05@vse.cz
+  synonyms:
+    - Energy Certificate
+    - PENB (Průkaz energetické náročnosti budovy)
+    - EPC (Energy Performance Certificate)
+  acronyms:
+    - PENB
+    - EPC
+  related_capability: "Collateral ESG Assessment / Climate Risk Scoring"
+  related_terms:
+    - "Flood Zone Classification"
+    - "Climate Physical Risk"
+    - "Collateral Valuation"
+    - "Building Identifier (ID budovy)"
+    - "AI Act High-Risk System"
