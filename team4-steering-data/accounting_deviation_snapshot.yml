@@ -1,0 +1,275 @@
+dataContractSpecification: 1.1.0
+id: urn:horizon:accounting:deviation-snapshot
+
+info:
+  title: Accounting Deviation Snapshot
+  name: accounting_deviation_snapshot
+  product_type: STATE
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Resolves deviations between the general ledger (GL) and client data. Ensures
+    error-free reporting to the parent company, early error detection, and maintains
+    the credibility of financial statements.
+    Data latency: Monthly
+    Business Entity: Accounting
+    Business Purpose: General Ledger to Client Data Reconciliation and Head Office Reporting
+    Consumers: Head Office (Parent Company), Data Stewards, Accounting
+    Data Sources: Transaction systems (Team 3: Client Service), General Ledger
+
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true"
+    right_to_erasure: "false"
+    purpose_limitation: "true"
+
+owner: "Horizon AI Bank / Team 4 / Accounting"
+contact:
+  name: Josef Kuník
+  email: josef.kunik@horizon-ai-bank.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: accounting-prod
+    table: accounting_deviation_snapshot
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: accounting-dev
+    table: accounting_deviation_snapshot
+
+schema:
+  - name: accounting_deviation_snapshot
+    description: Snapshot of financial deviations mapped by GCOA (Group Chart of Accounts) in CZK.
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic partitioning"
+
+      - name: glbal_date
+        type: date
+        description: General Ledger Balance Date
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — accurate risk aggregation and reporting timeliness"
+
+      - name: dom_gcoa
+        type: string
+        description: Group Chart of Accounts identifier
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS 9 — financial mapping and aggregation requirements"
+
+      - name: work_bal
+        type: number
+        description: Working Balance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — financial reconciliation"
+
+      - name: avg_work_bal
+        type: number
+        description: Average Working Balance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — financial reconciliation"
+
+      - name: glbal_amount_czk
+        type: number
+        description: General Ledger Balance Amount in CZK
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — financial accuracy"
+
+      - name: avg_glbal_amount_czk
+        type: number
+        description: Average General Ledger Balance Amount in CZK
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — financial accuracy"
+
+      - name: vd5_bal
+        type: number
+        description: VD5 Source Balance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — source system tracking"
+
+      - name: vd5_bal_avg
+        type: number
+        description: Average VD5 Source Balance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — source system tracking"
+
+      - name: diff_bal_calc
+        type: number
+        description: Calculated Difference (Deviation) Balance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — risk and deviation reporting"
+
+      - name: avg_diff_bal_calc
+        type: number
+        description: Calculated Average Difference (Deviation) Balance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — risk and deviation reporting"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+  - rule: row_count
+    min: 100
+    max: 15000
+    description: "Detects data distribution anomalies based on expected GCOA account counts"
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
+sla:
+  availability: 99.5%
+  data_latency: Monthly
+  retention_period: 12 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Accounting
+    business_owner: Head of Accounting
+    product_owner: "Josef Kuník - josef.kunik@horizon-ai-bank.cz"
+    data_steward: Accounting Data Steward
+    tags:
+      - accounting
+      - state
+      - reconciliation
+      - general-ledger
+    classification: "Internal Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: Team 3 Transaction Systems
+          type: internal-system
+          description: "Provides underlying client transactional balances for comparison"
+        - name: General Ledger System
+          type: internal-system
+          description: "Provides official GCOA balances"
+      downstream:
+        - name: Head Office Reporting Platform
+          type: data-product
+          description: "Consumes reconciliation data to generate error-free financial statements for the parent company"
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "Volume must be within expected range"
+    retention:
+      period: "12 months"
+      rationale: "Required to maintain historical deviation tracking for annual financial reporting cycles."
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Provides accurate, aggregated general ledger data quality metrics to support risk reporting."
+      - regulation: BASEL IV
+        status: Contributes
+        reason: "Ensures financial baseline data quality used for capital calculation inputs."
+      - regulation: EBA
+        status: Contributes
+        reason: "Supports rigorous data governance, mapping, and ownership over critical financial reconciliations."
+      - regulation: DORA
+        status: Contributes
+        reason: "SLA metrics document the availability and resilience of financial reporting inputs."
+      - regulation: AML
+        status: N/A
+        reason: "Contains aggregated general ledger balances with no transactional AML/KYC data."
+      - regulation: MiFID II
+        status: N/A
+        reason: "Contains no investment transaction reporting or capital markets data."
+      - regulation: PSD2
+        status: N/A
+        reason: "Contains no payment services or open banking retail data."
+      - regulation: GDPR
+        status: N/A
+        reason: "Product relies entirely on aggregated, non-personal financial accounts; no PII is present."
+      - regulation: AI Act
+        status: N/A
+        reason: "This product is an analytical aggregate and not an input/output for AI systems."
+      - regulation: IFRS 9
+        status: Contributes
+        reason: "Ensures accuracy of underlying general ledger balances essential for financial reporting and ECL frameworks."
+    ai_act:
+      is_ai_input: false
+      is_ai_output: false
+      high_risk_classification: false
+      fria_required: false
+      fria_notes: "FRIA is not required — analytical reconciliation tool with aggregated non-personal financial data, independent of AI processing."
+  glossary_entry:
+    term: "Accounting General Ledger Deviation"
+    definition: "A recorded snapshot representing the financial deviation between general ledger account balances and underlying client transactional data."
+    fibo_class: "fibo-fnd-acc-aeq:GeneralLedgerAccount"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/AccountingEquity/GeneralLedgerAccount"
+    domain: Accounting
+    dawiso_status: draft
+    steward: "Josef Kuník - josef.kunik@horizon-ai-bank.cz"
+    synonyms:
+      - "Odchylka hlavní knihy"
+      - "GL Deviation"
+    acronyms: []
+    related_capability: "Financial Reconciliation"
+    related_terms:
+      - "General Ledger Balance"
+      - "Client Account Balance"
