@@ -12,7 +12,7 @@ import glob
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-CONTRACT_GLOB = "**/*.yml"
+CONTRACT_GLOBS = ["**/*.yml", "**/*.yaml"]
 REPORT_PATH   = "validation_report.txt"
 
 # 10 mandatory regulations from prompt v3.3
@@ -71,7 +71,9 @@ def check_extended_gdpr(path, doc, issues):
 
 def check_fields_compliance(path, doc, issues):
     """Check every schema field has x-compliance with regulatory_basis (v3.3)."""
-    schemas = doc.get("schema", [])
+    schema = doc.get("schema", [])
+    # Normalise: single-table dict → list
+    schemas = [schema] if isinstance(schema, dict) else schema
     for table in schemas:
         for field in table.get("fields", []):
             fname = field.get("name", "<unnamed>")
@@ -218,7 +220,8 @@ def validate_file(path):
 
 def main():
     files = [
-        f for f in glob.glob(CONTRACT_GLOB, recursive=True)
+        f for pattern in CONTRACT_GLOBS
+        for f in glob.glob(pattern, recursive=True)
         if ".github" not in f and "node_modules" not in f
     ]
 
