@@ -1,0 +1,276 @@
+dataContractSpecification: 1.1.0
+
+id: urn:horizon-ai-bank:strategy:market-rate:snapshot:v0.1.0
+
+info:
+  title: Strategy Market Rate Snapshot
+  name: Strategy Market Rate Snapshot
+  product_type: STATE
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Data latency: D+1
+    Business Entity: Market Interest Rate Record
+    Business Purpose: Overview of market interest rates and competitive offers from monitored financial institutions. Supports market monitoring and decision-making when the bank adjusts its pricing strategy.
+    Consumers: Strategy team and board of Nova Banka (internal, Team 6) for UC1 — monitoring CNB official rates vs. competitor offers; UC2 — supporting board response to sudden market rate changes.
+    Data Sources: Czech National Bank (CNB) official rate publications, Czech Statistical Office (CSU), and publicly available rate offers from monitored competitor banks (Česká spořitelna, ČSOB, KB, Raiffeisenbank, mBank, AirBank, Fio, Moneta).
+
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: false
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true — only rate value, source, product type, and snapshot date collected; no personal data present"
+    right_to_erasure: "N/A — no personal data; product contains only public market and CNB rate data"
+    purpose_limitation: "true — processing limited to market monitoring and pricing strategy support; no secondary use permitted"
+
+  owner: "Horizon AI Bank / Strategy"
+  contact:
+    name: Valeria Lukomskaja
+    email: xlukv00@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: strategy
+    table: strategy_market_rate_snapshot
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: strategy
+    table: strategy_market_rate_snapshot
+
+schema:
+  - name: strategy_market_rate_snapshot
+    description: "Snapshot of CNB official rates and competitor bank offers as of a given date, used for market monitoring and pricing strategy support."
+
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic partitioning"
+
+      - name: snapshot_date
+        type: date
+        description: "Date of the market rate snapshot (YYYY-MM-DD); indicates the reference date for all rates in the record"
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — data accuracy and timeliness for market rate reporting"
+
+      - name: source
+        type: string
+        description: "Rate source — CNB or CSU (official) or name of a monitored competitor bank (e.g. Česká spořitelna, ČSOB, KB)"
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — source institution provenance for market monitoring"
+
+      - name: product_type
+        type: string
+        description: "Financial product type for which the rate applies (e.g. savings account, mortgage, consumer loan)"
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — product classification for pricing strategy support"
+
+      - name: rate_value
+        type: decimal
+        description: "Interest rate value in percent per annum (% p.a.); must be within realistic range -5 to 50"
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — accuracy of market rate data for risk and pricing decisions"
+
+      - name: is_official
+        type: boolean
+        description: "True if the rate is an official CNB rate; False if it is a competitor market offer"
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — distinguishing regulatory vs. competitive market data"
+
+      - name: created_at
+        type: timestamp
+        description: "Timestamp of record creation; not sensitive"
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — audit trail for data ingestion"
+
+quality:
+  - rule: not_null
+    field: record_id
+
+  - rule: unique
+    field: record_id
+
+  - rule: not_null
+    field: snapshot_date
+    description: "Snapshot date must not be null"
+
+  - rule: not_null
+    field: rate_value
+    description: "Rate value must not be null"
+
+  - rule: not_null
+    field: source
+    description: "Rate source must not be null"
+
+  - rule: range
+    field: rate_value
+    min: -5
+    max: 50
+    description: "Interest rate must be within a realistic range of -5 to 50 % p.a."
+
+  - rule: accepted_values
+    field: source
+    values: [ČNB, ČSÚ, Česká spořitelna, ČSOB, KB, Raiffeisenbank, mBank, AirBank, Fio, Moneta]
+    description: "Source must be from the list of monitored institutions"
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
+  - rule: row_count
+    min: 10
+    max: 100000
+    description: "Detects data distribution anomalies (volume drop/spike). Lower bound raised to 10 to ensure at least one full snapshot cycle is present."
+
+sla:
+  availability: 99.5%
+  data_latency: "D+1"
+  retention_period: "36 months"
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Strategy
+    business_owner: "Valeria Lukomskaja - xlukv00@vse.cz"
+    product_owner: "Valeria Lukomskaja - xlukv00@vse.cz"
+    data_steward: "Valeria Lukomskaja - xlukv00@vse.cz"
+    tags:
+      - strategy
+      - market-rates
+      - cnb
+      - competitor-monitoring
+      - pricing
+    classification: "Strategy Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: "Czech National Bank (CNB) — official rate publications"
+          type: internal-system
+          description: "Official CNB interest rate decisions and key rate announcements."
+        - name: "Czech Statistical Office (CSU)"
+          type: internal-system
+          description: "Macroeconomic indicators and statistical rate data."
+        - name: "Competitor bank public rate offers"
+          type: internal-system
+          description: "Publicly available rate offers from: Česká spořitelna, ČSOB, KB, Raiffeisenbank, mBank, AirBank, Fio, Moneta."
+      downstream:
+        - name: "Strategy team pricing decision support"
+          type: data-product
+          description: "Used by Strategy team and board for market monitoring and pricing strategy adjustments."
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "rate_value must be within range -5 to 50 % p.a."
+      - "source must be from the approved list of monitored institutions"
+      - "snapshot_date and rate_value must not be null"
+      - "Volume must be within expected range (10–100000 rows)"
+    retention:
+      period: "36 months"
+      rationale: "Rate history over 3 years enables trend analysis and supports regulatory reporting requirements under BCBS 239."
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Provides accurate, timely market rate data supporting risk data aggregation and reporting accuracy requirements."
+      - regulation: BASEL IV
+        status: N/A
+        reason: "No capital calculation inputs present; product is market monitoring data only."
+      - regulation: EBA
+        status: Contributes
+        reason: "Documented ownership, lineage, and data governance support EBA ICT data management guidelines."
+      - regulation: DORA
+        status: Contributes
+        reason: "SLA and availability documentation supports ICT operational resilience requirements."
+      - regulation: AML
+        status: N/A
+        reason: "No transactional, KYC, or AML-relevant data present."
+      - regulation: MiFID II
+        status: N/A
+        reason: "No investment transaction reporting or capital markets execution data present."
+      - regulation: PSD2
+        status: N/A
+        reason: "No payment services or open banking data present."
+      - regulation: GDPR
+        status: N/A
+        reason: "Product contains only public market rate data; no personal data present."
+      - regulation: AI Act
+        status: N/A
+        reason: "Product is not an input or output of an AI system."
+      - regulation: IFRS 9
+        status: Contributes
+        reason: "Market rate data supports interest rate inputs for expected credit loss modelling and financial instrument valuation."
+    ai_act:
+      is_ai_input: false
+      is_ai_output: false
+      high_risk_classification: false
+      fria_required: false
+      fria_notes: "FRIA not required. Product contains only public market and CNB rate data; no AI processing or automated decision-making affecting individuals."
+  glossary_entry:
+    term: "Market Interest Rate Record"
+    definition: "A point-in-time record of an interest rate — either an official Czech National Bank rate or a competitor bank's publicly available product rate — captured for the purpose of market monitoring and pricing strategy support at Horizon AI Bank. Each record is associated with a specific financial product type, source institution, and reference date."
+    fibo_class: "fibo-fbc-fi-ip:InterestRate"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FBC/FinancialInstruments/InstrumentPricing/InterestRate"
+    domain: Strategy
+    dawiso_status: draft
+    steward: "Valeria Lukomskaja - xlukv00@vse.cz"
+    synonyms:
+      - Market Rate
+      - Benchmark Rate
+      - Competitor Rate
+    acronyms:
+      - CNB
+      - CSU
+    related_capability: "Market Monitoring / Pricing Strategy"
+    related_terms:
+      - "CNB Key Rate"
+      - "Competitor Offer"
+      - "Pricing Decision"
+      - "Interest Rate Benchmark"
