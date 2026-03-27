@@ -1,0 +1,401 @@
+dataContractSpecification: 1.1.0
+id: urn:horizon-ai-bank:data-contract:customer-service-kpi-performance:v0.1.0
+info:
+  title: Customer Service KPI Performance
+  name: Customer Service KPI Performance
+  product_type: AGGREGATION
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Data latency: Daily EOD / T+1
+    Business Entity: Customer Service KPI aggregation snapshot — one record per combination of business_date/reporting_period, team_name, channel_name, request_type, customer_segment, and region.
+    Business Purpose: Monitor service quality, efficiency, and escalation patterns; support standardised management reporting and operational decision-making across teams and channels.
+    Consumers: Senior management, Customer Service management, team leaders, performance management, Team 6, dashboard users, downstream reporting and analytics consumers.
+    Data Sources: interaction, service_case, complaint, feedback_nps, customer, agent/employee_profile, customer_analytics_profile, next_best_action, nba_catalog, channel (all silver-layer sources).
+
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    # Extended GDPR fields (v3.3)
+    data_minimization: "true — only strictly necessary aggregated KPI fields are collected; no personal identifiers are included in this product"
+    right_to_erasure: "false — this is a fully aggregated, non-personal data product; no individual records that could be linked to a data subject exist"
+    purpose_limitation: "true — processing is strictly limited to customer service performance monitoring and management reporting as declared"
+
+owner: Horizon AI Bank
+
+contact:
+  name: Artur Zakharov
+  email: zaka09@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: customer_service
+    table: customer_service_kpi_performance
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: customer_service
+    table: customer_service_kpi_performance
+
+schema:
+  name: customer_service_kpi_performance
+  description: Aggregated customer service performance and quality KPI snapshot per reporting grain (date, team, channel, request type, segment, region).
+  fields:
+
+    - name: record_id
+      type: string
+      description: Unique record identifier (UUID v4)
+      required: true
+      unique: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+    - name: business_date
+      type: date
+      description: Business processing date (YYYY-MM-DD)
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "BCBS 239 — timeliness of risk and operational data reporting"
+
+    - name: region
+      type: string
+      description: Geographic region of the service record
+      required: true
+      enum: [CZ, SK]
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — geographic partitioning for regional reporting"
+
+    - name: reporting_period
+      type: string
+      description: Reporting period label (e.g. 2024-Q1, 2024-W12) for roll-up aggregations
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "BCBS 239 — defined reporting cadence and periodicity for management data"
+
+    - name: team_name
+      type: string
+      description: Name of the customer service team responsible for the interactions in the snapshot
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — operational dimension for team-level performance monitoring"
+
+    - name: channel_name
+      type: string
+      description: Service channel used (e.g. Push-notification, call-center, email, branch, IB/MB)
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "PSD2 — monitoring of digital service channels and authentication processes; Internal governance"
+
+    - name: request_type
+      type: string
+      description: Category of customer service request handled within the snapshot
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — request classification for operational analytics"
+
+    - name: customer_segment
+      type: string
+      description: Customer segment associated with the interactions (e.g. retail, SME, premium)
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — segment-level reporting dimension"
+
+    - name: interaction_count
+      type: integer
+      description: Total number of customer interactions recorded for this reporting grain; must be non-negative
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "BCBS 239 — volume completeness and accuracy of operational data; DORA — ICT service availability monitoring"
+
+    - name: nps_score_avg
+      type: float
+      description: Average Net Promoter Score for interactions with collected feedback; range 0 to 100; null if no feedback collected
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — customer satisfaction KPI; EBA — data quality framework for customer-facing metrics"
+
+    - name: first_contact_resolution_rate
+      type: float
+      description: Proportion of cases resolved on first contact; value between 0 and 1; null if interaction_count = 0
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — service efficiency KPI; EBA — data quality and governance framework"
+
+    - name: sla_compliance_rate
+      type: float
+      description: Proportion of SLA-applicable cases resolved within agreed SLA; value between 0 and 1; calculated only where SLA is applicable
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "DORA — ICT service resilience and availability monitoring; Internal governance — SLA performance tracking"
+
+    - name: avg_handling_time_seconds
+      type: float
+      description: Average handling time in seconds calculated from completed interactions only; must be non-negative
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — operational efficiency KPI; BCBS 239 — completeness of operational reporting inputs"
+
+    - name: escalation_rate
+      type: float
+      description: Proportion of interactions escalated; value between 0 and 1; null if interaction_count = 0
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — quality and complaints management KPI; DORA — incident pattern monitoring"
+
+    - name: churn_risk_band
+      type: string
+      description: Aggregated churn risk band label derived from customer_analytics_profile (e.g. Low, Medium, High); represents the dominant or average band for the segment/grain
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — risk-informed segmentation for customer retention analytics; AI Act — input feature for high-risk churn prediction models"
+
+    - name: nba_action_category
+      type: string
+      description: Next Best Action category derived from next_best_action and nba_catalog; aggregated label for the dominant NBA recommended for this grain
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — NBA-driven service optimisation; AI Act — output metadata for Next Best Action AI system"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+  - rule: not_null
+    field: business_date
+  - rule: not_null
+    field: reporting_period
+  - rule: not_null
+    field: team_name
+  - rule: not_null
+    field: channel_name
+  - rule: not_null
+    field: request_type
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+  - rule: row_count
+    min: 100
+    max: 50000
+    description: "Detects data distribution anomalies (volume drop/spike) — expected range per reporting day based on team input"
+  - rule: range
+    field: nps_score_avg
+    min: -100
+    max: 100
+  - rule: range
+    field: first_contact_resolution_rate
+    min: 0
+    max: 1
+  - rule: range
+    field: sla_compliance_rate
+    min: 0
+    max: 1
+  - rule: range
+    field: escalation_rate
+    min: 0
+    max: 1
+  - rule: min_value
+    field: avg_handling_time_seconds
+    min: 0
+  - rule: min_value
+    field: interaction_count
+    min: 0
+  - rule: custom
+    description: "Exactly one aggregate record must exist per combination of (business_date or reporting_period, team_name, channel_name, request_type, customer_segment, region)"
+  - rule: custom
+    description: "If interaction_count = 0 then all rate-based KPIs (first_contact_resolution_rate, sla_compliance_rate, escalation_rate) must be null or 0 per agreed reporting logic"
+  - rule: custom
+    description: "avg_handling_time_seconds must be calculated only from completed interactions"
+  - rule: custom
+    description: "sla_compliance_rate must be calculated only for cases where SLA is applicable"
+  - rule: custom
+    description: "nps_score_avg must be calculated only from interactions with collected feedback"
+
+sla:
+  availability: 99.5%
+  data_latency: Daily EOD / T+1
+  retention_period: 36 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Customer Service
+    business_owner: "Team 3 – Customer Service"
+    product_owner: "Artur Zakharov - zaka09@vse.cz"
+    data_steward: "Artur Zakharov - zaka09@vse.cz"
+    tags:
+      - customer-service
+      - kpi
+      - aggregation
+      - management-reporting
+      - performance
+    classification: "Aggregated Data Product"
+    data_classification: Internal
+
+    lineage:
+      upstream:
+        - name: interaction
+          type: internal-system
+          description: "Provides interaction_count and avg_handling_time_seconds inputs (silver layer)"
+        - name: service_case
+          type: internal-system
+          description: "Provides SLA compliance context and resolution data"
+        - name: complaint
+          type: internal-system
+          description: "Contributes to escalation_rate measurement alongside service_case"
+        - name: feedback_nps
+          type: internal-system
+          description: "Source for nps_score_avg from collected customer feedback"
+        - name: customer
+          type: internal-system
+          description: "Provides customer_segment dimension"
+        - name: employee_profile
+          type: internal-system
+          description: "Provides team_name dimension"
+        - name: channel
+          type: internal-system
+          description: "Provides channel_name dimension"
+        - name: customer_analytics_profile
+          type: internal-system
+          description: "Provides churn_risk_band"
+        - name: next_best_action
+          type: internal-system
+          description: "Provides nba_action_category"
+        - name: nba_catalog
+          type: internal-system
+          description: "Reference catalog for NBA action category labels"
+      downstream:
+        - name: Senior Management Dashboard
+          type: data-product
+          description: "Management reporting and operational KPI dashboards"
+        - name: Team 6 Analytics
+          type: data-product
+          description: "Downstream reporting and analytics consumers"
+        - name: Performance Management Reporting
+          type: data-product
+          description: "Team leader and performance management consumers"
+
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "Volume must be within expected range of 100 to 50000 records per reporting day"
+      - "region must contain only accepted values: CZ, SK"
+      - "nps_score_avg must be within -100 to 100"
+      - "Rate fields (first_contact_resolution_rate, sla_compliance_rate, escalation_rate) must be between 0 and 1"
+      - "avg_handling_time_seconds and interaction_count must be non-negative"
+
+    retention:
+      period: "36 months"
+      rationale: "Aligns with internal data governance policy and supports historical KPI trend analysis and audit requirements"
+
+    # Regulatory Mapping — source of truth: Mapování regulací na datové produkty.docx
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: "Contributes"
+        reason: "Data product contains defined KPI metrics, documented lineage, data quality rules, and auditable reporting structure. KPIs are aggregated for management reporting — directly supports accuracy, completeness, and timeliness requirements of BCBS 239."
+      - regulation: BASEL IV
+        status: "N/A"
+        reason: "Use case is not focused on capital adequacy or RWA calculation. Product covers customer service data, not risk-weighted assets or credit/market/operational risk capital inputs."
+      - regulation: EBA
+        status: "Contributes"
+        reason: "Data governance is defined via data contracts, data ownership, and DQ rules. Product contains metadata, ownership assignment, and quality control rules — supporting EBA data governance and DQ framework requirements."
+      - regulation: DORA
+        status: "Contributes"
+        reason: "Product supports monitoring of service availability and incidents through SLA metrics and interaction event logs. Data is available T+1 and enables audit of ICT processes and service resilience."
+      - regulation: AML
+        status: "N/A"
+        reason: "Product is fully aggregated and contains no individual customer identifiers, transaction monitoring data, or KYC fields. No AML-relevant data is present in this data product."
+      - regulation: MiFID II
+        status: "N/A"
+        reason: "Product is not designed for investment reporting, best execution monitoring, or capital markets transaction archiving. Customer service KPIs are operational, not financial instrument data."
+      - regulation: PSD2
+        status: "Contributes"
+        reason: "channel_name field captures digital service channels (IB, MB) which can be used for monitoring of digital service usage and authentication process performance, supporting PSD2 digital channel oversight."
+      - regulation: GDPR
+        status: "N/A"
+        reason: "This data product is fully aggregated and contains no personal data or individual-level identifiers. GDPR restrictions on personal data processing, right to erasure, and data minimisation do not apply directly. Data minimisation principle is nonetheless followed by design."
+      - regulation: AI Act
+        status: "Contributes"
+        reason: "Product data (churn_risk_band, nba_action_category, KPI metrics) may be used as input to high-risk AI models (churn prediction, Next Best Action). Auditability and defined data quality support AI Act transparency requirements for training and inference data."
+      - regulation: IFRS 9
+        status: "N/A"
+        reason: "Use case is not focused on financial reporting, ECL modelling, or loan staging. Product does not cover accounting or expected credit loss domains."
+
+    # AI Act / FRIA Assessment (v3.3)
+    ai_act:
+      is_ai_input: true
+      is_ai_output: true
+      high_risk_classification: true
+      fria_required: true
+      fria_notes: |
+        FRIA is required because this product provides input features (churn_risk_band, nba_action_category, KPI metrics)
+        to AI/ML models including churn prediction and Next Best Action systems, which are classified as high-risk
+        under the EU AI Act in the banking sector (Annex III — access to essential services, individual risk scoring).
+        The product also receives nba_action_category as an AI-generated output.
+        Affected persons: retail and business banking customers across CZ and SK regions.
+        Rights at risk: fair treatment, non-discrimination in service access, transparency of automated decisions.
+        Bias mitigation measures required: regular monitoring of churn_risk_band distribution across customer segments
+        and regions; documented DQ checks on NBA output categories; audit trail of model inputs and outputs;
+        human oversight mechanisms for high-risk NBA recommendations.
+
+  glossary_entry:
+    term: "Customer Service KPI Performance"
+    definition: "An aggregated data product capturing key performance indicators for customer service operations at Horizon AI Bank, including interaction volumes, NPS, first contact resolution, SLA compliance, escalation rates, handling times, churn risk bands, and Next Best Action categories, aggregated per reporting grain of date, team, channel, request type, customer segment, and region."
+    fibo_class: "fibo-fbc-pas-caa:CustomerAccount"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/"
+    domain: Customer Service
+    dawiso_status: draft
+    steward: "Artur Zakharov - zaka09@vse.cz"
+    synonyms:
+      - Customer Service KPI Report
+      - CS Performance Aggregation
+    acronyms:
+      - CS KPI
+    related_capability: "Customer Service Performance Management"
+    related_terms:
+      - "Net Promoter Score (NPS)"
+      - "First Contact Resolution (FCR)"
+      - "SLA Compliance"
+      - "Average Handling Time (AHT)"
+      - "Escalation Rate"
+      - "Next Best Action (NBA)"
+      - "Churn Risk Band"

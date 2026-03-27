@@ -1,0 +1,481 @@
+dataContractSpecification: 1.1.0
+id: dp-team3-customer-service-interaction-events-v0-1-0
+info:
+  title: Customer Service Interaction Events
+  name: Customer Service Interaction Events
+  product_type: EVENT
+  maturity_score: 30%
+  version: 0.1.0
+  status: draft
+  description: |
+    Data latency: Near real-time — available within 15 minutes of source generation;
+                  downstream daily aggregation for analytics.
+    Business Entity: Customer Service Interaction Event
+    Business Purpose: Provide near-real-time visibility into customer journeys and
+      service interactions; identify bottlenecks and drop-off points; monitor
+      self-service usage; support downstream daily aggregation for operational
+      reporting and optimization.
+    Consumers: Customer Service management, team leaders, quality and operations
+      teams, Digital Banking management, Retail Operations, Team 6, and downstream
+      operational reporting and analytics users.
+    Data Sources: Silver-layer sources — interaction (interaction_id, customer_id,
+      channel_id, interaction_type), digital_event (event_timestamp, journey_step,
+      platform, event_status), service_case, complaint, channel (channel_name via
+      reference join), customer; optional enrichment from agent for selected
+      analytical views. Derived fields (self_service_flag, drop_off_flag,
+      completion_flag) are computed from event_status, journey logic, and presence
+      or absence of agent involvement.
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true — only operationally necessary fields for customer journey monitoring are collected; no personal identifiers such as names, emails, or phone
+    numbers are present"
+    right_to_erasure: "false — the product contains no direct personal data; customer_id is a pseudonymous technical identifier and the product does not constitute a personal data store subject to erasure under GDPR Art. 17"
+    purpose_limitation: "true — processing is strictly limited to customer journey visibility, self-service monitoring, and operational reporting as declared"
+
+owner: Horizon AI Bank
+
+contact:
+  name: Artur Zakharov
+  email: zaka09@vse.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: customer_service
+    table: customer_service_interaction_events
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: customer_service
+    table: customer_service_interaction_events
+
+schema:
+  name: customer_service_interaction_events
+  description: Atomic customer journey and service interaction events in near real-time.
+  fields:
+
+    - name: record_id
+      type: string
+      description: Unique record identifier (UUID v4)
+      required: true
+      unique: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+    - name: business_date
+      type: date
+      description: Business processing date (YYYY-MM-DD)
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "BCBS 239 — timeliness of risk and operational data reporting"
+
+    - name: region
+      type: string
+      description: Geographic region of the interaction
+      required: true
+      enum: [CZ, SK]
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — geographic partitioning and operational segmentation"
+
+    - name: interaction_id
+      type: string
+      description: Unique identifier of the customer interaction session; foreign key
+        to the silver-layer interaction source table
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "BCBS 239 — data lineage and traceability of operational records;
+          EBA — data ownership and referential integrity"
+
+    - name: customer_id
+      type: string
+      description: Pseudonymous technical identifier linking the event to a customer
+        entity; does not expose direct personal data
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — pseudonymous linkage key; AML — KYC
+          context support through customer reference without exposing personal identifiers"
+
+    - name: event_timestamp
+      type: timestamp
+      description: UTC timestamp of the event occurrence (ISO 8601)
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "BCBS 239 — timeliness of data; DORA — ICT event chronology
+          for incident reconstruction and audit"
+
+    - name: channel_name
+      type: string
+      description: Name of the service channel through which the interaction occurred
+        (e.g. Push-notification, call-center, email, branch, IB/MB); sourced via reference join from the
+        channel silver table
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "PSD2 — monitoring of digital channels and authentication
+          processes; Internal governance — controlled vocabulary for channel classification"
+
+    - name: interaction_type
+      type: string
+      description: Classification of the interaction type (e.g. inquiry, complaint,
+        transaction, self-service)
+      required: true
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "EBA — data quality and categorisation framework;
+          Internal governance — operational classification"
+
+    - name: journey_step
+      type: string
+      description: Step identifier within the customer journey flow; follows a
+        controlled vocabulary
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — customer journey mapping and
+          bottleneck identification"
+
+    - name: platform
+      type: string
+      description: Digital platform on which the event occurred (e.g. web, iOS,
+        Android, in-branch); follows a controlled vocabulary
+      required: false
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "PSD2 — digital channel monitoring; Internal governance —
+          platform-level operational reporting"
+
+    - name: event_status
+      type: string
+      description: Outcome status of the event
+      required: false
+      enum: [completed, failed, abandoned, pending]
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "DORA — ICT incident and availability monitoring;
+          Internal governance — SLA and quality tracking"
+
+    - name: self_service_flag
+      type: boolean
+      description: Derived flag indicating whether the event was completed without
+        human agent involvement (true = self-service)
+      required: false
+      enum: [true, false]
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — self-service adoption monitoring
+          and operational efficiency reporting"
+
+    - name: drop_off_flag
+      type: boolean
+      description: Derived flag indicating whether the customer abandoned the journey
+        step before completion (true = drop-off); mutually exclusive with
+        completion_flag = true
+      required: false
+      enum: [true, false]
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — journey drop-off detection and
+          UX optimisation"
+
+    - name: completion_flag
+      type: boolean
+      description: Derived flag indicating whether the interaction journey step was
+        successfully completed (true = completed); mutually exclusive with
+        drop_off_flag = true
+      required: false
+      enum: [true, false]
+      x-compliance:
+        is_pii: false
+        sensitivity: Internal
+        regulatory_basis: "Internal governance — completion rate KPI and operational
+          reporting"
+
+quality:
+  - rule: not_null
+    field: record_id
+
+  - rule: unique
+    field: record_id
+
+  - rule: not_null
+    field: interaction_id
+
+  - rule: not_null
+    field: customer_id
+
+  - rule: not_null
+    field: event_timestamp
+
+  - rule: not_null
+    field: channel_name
+
+  - rule: not_null
+    field: interaction_type
+
+  - rule: row_count
+    min: 1000
+    max: 500000
+    description: "Detects data distribution anomalies (volume drop/spike) — expected
+      range is 1,000 to 500,000 event records per business day"
+
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+
+  - rule: accepted_values
+    field: event_status
+    values: [completed, failed, abandoned, pending]
+
+  - rule: accepted_values
+    field: self_service_flag
+    values: [true, false]
+
+  - rule: accepted_values
+    field: drop_off_flag
+    values: [true, false]
+
+  - rule: accepted_values
+    field: completion_flag
+    values: [true, false]
+
+  - rule: custom
+    description: "If drop_off_flag = true then completion_flag must not be true
+      — mutually exclusive derived flags"
+    expression: "NOT (drop_off_flag = true AND completion_flag = true)"
+
+  - rule: custom
+    description: "If self_service_flag = true then the event should not require
+      human agent involvement — no agent_id linkage expected for self-service events"
+    expression: "NOT (self_service_flag = true AND agent_id IS NOT NULL)"
+
+  - rule: custom
+    field: interaction_id
+    description: "Every event must reference an existing interaction_id in the
+      silver-layer interaction source table"
+
+  - rule: custom
+    fields: [journey_step, platform, channel_name]
+    description: "Values must conform to approved controlled vocabularies maintained
+      in the reference data layer"
+
+sla:
+  availability: 99.5%
+  data_latency: "15 minutes from source event generation (near real-time)"
+  retention_period: 36 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Customer Service
+    business_owner: "Horizon AI Bank Customer Service — zaka09@vse.cz"
+    product_owner: "Artur Zakharov — zaka09@vse.cz"
+    data_steward: "Artur Zakharov — zaka09@vse.cz"
+    tags:
+      - customer-service
+      - interaction-events
+      - customer-journey
+      - near-real-time
+      - event-driven
+    classification: "Event Data Product"
+    data_classification: Internal
+
+    lineage:
+      upstream:
+        - name: interaction
+          type: internal-system
+          description: "Silver-layer source providing interaction_id, customer_id,
+            channel_id, interaction_type"
+        - name: digital_event
+          type: internal-system
+          description: "Silver-layer source providing event_timestamp, journey_step,
+            platform, event_status"
+        - name: channel
+          type: internal-system
+          description: "Reference table providing channel_name via join on channel_id"
+        - name: service_case
+          type: internal-system
+          description: "Silver-layer source for service case context"
+        - name: complaint
+          type: internal-system
+          description: "Silver-layer source for complaint-type interactions"
+        - name: customer
+          type: internal-system
+          description: "Silver-layer customer entity for pseudonymous ID resolution"
+        - name: agent
+          type: internal-system
+          description: "Optional enrichment source for agent involvement in
+            selected analytical views"
+      downstream:
+        - name: Customer Service KPI Performance
+          type: data-product
+          description: "Daily aggregated KPI reporting product consuming
+            interaction events for management dashboards"
+        - name: Team 6 Downstream Analytics
+          type: data-product
+          description: "Team 6 operational analytics and reporting consumers"
+
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "Volume must be within expected range of 1,000 to 500,000 records per day"
+      - "drop_off_flag = true and completion_flag = true must never co-occur"
+      - "self_service_flag = true must not be associated with agent involvement"
+      - "Every event must reference an existing interaction_id"
+      - "journey_step, platform, and channel_name must conform to controlled vocabularies"
+
+    retention:
+      period: "36 months"
+      rationale: "Operational and compliance requirement — supports trend analysis,
+        regulatory audit trails (BCBS 239, EBA, DORA), and incident reconstruction.
+        Aligns with internal data governance policy and AML record-keeping guidance."
+
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Product contains defined DQ rules, data lineage, audit-traceable
+          record_id, and timeliness SLA supporting accuracy and completeness of
+          operational risk data reporting as required by BCBS 239. KPI aggregations
+          downstream serve management reporting."
+
+      - regulation: BASEL IV
+        status: N/A
+        reason: "Use case is not focused on capital adequacy or RWA calculation.
+          Product covers customer service event data, not risk-weighted assets,
+          credit risk, market risk, or operational risk capital inputs."
+
+      - regulation: EBA
+        status: Contributes
+        reason: "Product implements data governance via data contracts, defined
+          data ownership, DQ rules, metadata, and controlled vocabularies aligned
+          with EBA Guidelines on internal governance and data quality framework
+          requirements."
+
+      - regulation: DORA
+        status: Contributes
+        reason: "Near-real-time event logs with 15-minute SLA and 99.5%
+          availability target support ICT service availability monitoring,
+          incident chronology reconstruction, and digital operational resilience
+          audit as required by DORA."
+
+      - regulation: AML
+        status: Contributes
+        reason: "Product includes customer_id as a pseudonymous KYC context
+          reference. While the product does not perform transaction monitoring,
+          it can serve as supplementary KYC context. Does not contain detailed
+          transactional AML monitoring data."
+
+      - regulation: MiFID II
+        status: N/A
+        reason: "Product is not intended for investment services transaction
+          reporting, best execution monitoring, or archiving of investment
+          communications. Interaction events may include call centre contacts
+          but are not scoped for MiFID II reporting obligations."
+
+      - regulation: PSD2
+        status: Contributes
+        reason: "Product captures digital channel events (IB, MB) and
+          customer journey steps relevant to monitoring digital services,
+          authentication process flows, and open banking channel activity
+          as contextually relevant to PSD2 digital service oversight."
+
+      - regulation: GDPR
+        status: Both
+        reason: "Product contains customer_id as a pseudonymous identifier
+          and interaction events that may indirectly relate to data subjects.
+          GDPR contributes through purpose limitation, data minimisation,
+          and retention controls enforced in the contract. GDPR also restricts
+          usage to declared purposes and mandates access controls and
+          retention period compliance."
+
+      - regulation: AI Act
+        status: Contributes
+        reason: "Interaction event data and derived behavioural flags
+          (self_service_flag, drop_off_flag, completion_flag) may serve as
+          input to ML models such as churn prediction or Next Best Action.
+          Defined DQ rules and audit-traceable lineage support AI model
+          transparency and data quality requirements under the EU AI Act."
+
+      - regulation: IFRS 9
+        status: N/A
+        reason: "Use case is not focused on financial reporting, ECL modelling,
+          or loan staging. Product covers customer service operational events
+          and does not contain accounting or expected credit loss data."
+
+    ai_act:
+      is_ai_input: true
+      is_ai_output: false
+      high_risk_classification: true
+      fria_required: true
+      fria_notes: >
+        This product's derived behavioural flags (self_service_flag,
+        drop_off_flag, completion_flag) and interaction event data may be
+        used as input to high-risk AI systems in the banking domain — in
+        particular churn prediction models and Next Best Action recommendation
+        engines that produce automated or semi-automated decisions affecting
+        customer service routing and retention. Under EU AI Act Annex III,
+        AI systems used in credit institutions for decisions affecting access
+        to services may qualify as high-risk. Affected persons: retail bank
+        customers (CZ, SK). Rights at risk: non-discrimination (automated
+        profiling bias on channel or journey behaviour), transparency (right
+        to explanation of automated decisions). Bias mitigation measures
+        required include: fairness audits across customer segments, monitoring
+        of drop-off rates by demographic proxy, explainability requirements
+        for downstream models, and periodic review of model inputs derived
+        from this product. A Fundamental Rights Impact Assessment (FRIA) must
+        be conducted prior to using this product as a training or inference
+        input for any high-risk AI system.
+
+  glossary_entry:
+    term: "Customer Service Interaction Event"
+    definition: >
+        An atomic, timestamped record representing a single step or touchpoint
+        within a customer's service journey, capturing the channel, interaction
+        type, journey step, platform, and derived behavioural outcome flags
+        (self-service, drop-off, completion) for a customer interaction with
+        Horizon AI Bank's service infrastructure in near real-time.
+    fibo_class: "fibo-fnd-pas-pas:ServiceTransaction"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/ProductsAndServices/ProductsAndServices/ServiceTransaction"
+    domain: Customer Service
+    dawiso_status: draft
+    steward: "Artur Zakharov — zaka09@vse.cz"
+    synonyms:
+      - Customer Journey Event
+      - Service Touchpoint Record
+      - Interaction Event
+    acronyms:
+      - CSIE
+    related_capability: "Customer Journey Analytics; Omnichannel Service Monitoring;
+      Self-Service Adoption Tracking"
+    related_terms:
+      - "Customer Interaction"
+      - "Digital Channel Event"
+      - "Customer Journey"
+      - "Self-Service Flag"
+      - "Drop-Off Flag"
+      - "Completion Flag"
+      - "Customer Service KPI"
