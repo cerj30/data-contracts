@@ -84,7 +84,7 @@ schema:
       x-compliance:
         is_pii: false
         sensitivity: Internal
-        regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+        regulatory_basis: "Internal governance — processing date traceability"
 
     - name: region
       type: string
@@ -113,7 +113,7 @@ schema:
         is_pii: false
         sensitivity: Internal
         regulatory_basis: "Internal governance — temporal dimension of campaign
-          performance aggregation; BCBS 239 — data timeliness traceability"
+          performance aggregation and composite natural key"
 
     - name: campaign
       type: string
@@ -205,9 +205,8 @@ schema:
       x-compliance:
         is_pii: false
         sensitivity: Internal
-        regulatory_basis: "BCBS 239 — data quality monitoring and fitness-for-purpose
-          attestation; Internal governance — upstream DQ gate propagation
-          (PENDING: not yet implemented in gold_fact_acquisitions)"
+        regulatory_basis: "Internal governance — upstream DQ gate propagation
+            (PENDING: not yet implemented in gold_fact_acquisitions)"
 
 quality:
   - rule: not_null
@@ -399,13 +398,12 @@ x-dawiso:
     # NEW v3.3 — Regulatory Mapping
     regulatory_mapping:
       - regulation: BCBS 239
-        status: Contributes
+        status: N/A
         reason: >
-          business_date and date fields support data timeliness traceability.
-          Quality rules (row_count, completeness, composite_key_uniqueness,
-          distinct_client_count_validation) contribute to data accuracy and
-          aggregation integrity requirements under BCBS 239 for management
-          information reporting.
+          Product contains no risk data, RWA, capital ratios, credit exposure,
+          or any other BCBS 239 in-scope data. Marketing campaign KPIs
+          (spend, acquisition counts, CPA) are a commercial function outside
+          BCBS 239 regulatory scope.
       - regulation: BASEL IV
         status: N/A
         reason: >
