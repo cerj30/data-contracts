@@ -81,7 +81,7 @@ schema:
       x-compliance:
         is_pii: false
         sensitivity: Internal
-        regulatory_basis: "BCBS 239 — timeliness of risk data reporting"
+        regulatory_basis: "Internal governance — processing date traceability"
 
     - name: region
       type: string
@@ -123,8 +123,8 @@ schema:
       x-compliance:
         is_pii: false
         sensitivity: Internal
-        regulatory_basis: "BCBS 239 — data accuracy and timeliness; Internal governance
-          — composite key integrity for historized state snapshots"
+        regulatory_basis: "Internal governance — composite key integrity for historized
+          state snapshots; temporal dimension of daily customer scoring"
 
     - name: propensity_score
       type: decimal
@@ -307,8 +307,8 @@ schema:
       x-compliance:
         is_pii: false
         sensitivity: Internal
-        regulatory_basis: "BCBS 239 — data quality monitoring and fitness-for-purpose
-          attestation; Internal governance — upstream DQ gate propagation"
+        regulatory_basis: "Internal governance — upstream DQ gate propagation from
+           feature engineering pipeline"
 
 quality:
   - rule: not_null
@@ -427,7 +427,6 @@ x-dawiso:
       - retail-sales
       - customer-profile
       - state
-      - pojisteni-vozidel
     classification: "Retail Sales Data Product"
     data_classification: Confidential
     lineage:
@@ -483,12 +482,12 @@ x-dawiso:
     # NEW v3.3 — Regulatory Mapping
     regulatory_mapping:
       - regulation: BCBS 239
-        status: Contributes
+        status: N/A
         reason: >
-          business_date, snapshot_date, and dq_flag directly support data accuracy,
-          timeliness, and fitness-for-purpose requirements for risk data aggregation
-          reporting. Upstream DQ gate propagation (dq_flag) provides BCBS 239-aligned
-          data quality attestation.
+          Product contains no risk data, RWA, capital ratios, credit exposure,
+          or any other BCBS 239 in-scope data. Vehicle insurance propensity
+          scoring is a commercial retail sales function entirely outside
+          BCBS 239 regulatory scope.
       - regulation: BASEL IV
         status: N/A
         reason: >
@@ -528,13 +527,12 @@ x-dawiso:
           justified purposes, limiting secondary use of these fields beyond the
           declared cross-sell purpose.
       - regulation: GDPR
-        status: Both
+        status: Restricts
         reason: >
-          Contributes — product implements GDPR Art. 25 privacy-by-design via
-          pseudonymisation of client_id, data minimization, and purpose limitation
-          documentation. Restricts — 12 of 18 fields are classified as PII under
-          GDPR, requiring Contractual legal basis, right-to-erasure support, and
-          Art. 22 explainability obligations for automated profiling outputs.
+          12 of 18 fields are classified as PII under GDPR, requiring Contractual
+          legal basis, right-to-erasure support via pseudonymisation key-rotation,
+          and Art. 22 explainability obligations for automated profiling outputs.
+          Processing is restricted to declared cross-sell purpose only.
       - regulation: AI Act
         status: Both
         reason: >
