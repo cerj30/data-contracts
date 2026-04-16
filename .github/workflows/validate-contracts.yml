@@ -29,3 +29,39 @@ jobs:
         with:
           name: validation-report
           path: validation_report.txt
+
+  sync_dawiso:
+    name: Sync validated contracts to Dawiso
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Build Dawiso payload and sync
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+          DAWISO_SYNC_MODE: ${{ vars.DAWISO_SYNC_MODE }}
+          DAWISO_API_URL: ${{ secrets.DAWISO_API_URL }}
+          DAWISO_API_TOKEN: ${{ secrets.DAWISO_API_TOKEN }}
+          DAWISO_TIMEOUT_SECONDS: ${{ vars.DAWISO_TIMEOUT_SECONDS }}
+        run: python .github/scripts/sync_dawiso.py
+
+      - name: Upload Dawiso payload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dawiso-payload
+          path: dawiso_payload.json
+          if-no-files-found: ignore
