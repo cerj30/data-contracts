@@ -19,7 +19,7 @@ info:
     Consumers: Marketing team, management, finance, BI tools
     Data Sources: Advertising platforms (Google Ads, Meta Ads, Affiliate),
       web tracking, CRM, core banking system
-
+          Test sync trigger
   x-regulatory:
     gdpr_relevant: false
     critical_data_element: true
