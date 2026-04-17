@@ -18,6 +18,7 @@ info:
       pipelines within the Retail Sales domain.
     Consumers: Marketing, CRM systems, ML models
     Data Sources: Core banking system (transactions, products), CRM, campaign systems
+     Sync test via GitHub on 2026-04-17.
 
   x-regulatory:
     gdpr_relevant: true
