@@ -1,0 +1,332 @@
+dataContractSpecification: 1.1.0
+id: esg-climate-transition-profile-v1-0-0
+info:
+  title: Climate Exposure & Transition Risk Profile
+  name: Climate Exposure & Transition Risk Profile
+  product_type: AGGREGATION
+  maturity_score: 75%
+  version: 1.0.0
+  status: draft
+  description: |
+    Daily curated ESG risk profile for financed buildings and collateral objects.
+    Data latency: D+1
+    Business Entity: Building
+    Business Purpose: Provide a standardized ESG risk view for credit origination, collateral monitoring, early warning, and portfolio segmentation.
+    Consumers: Underwriting, Collateral Management, Portfolio Risk, ESG Reporting
+    Data Sources: ICM Gen AI, CHMI, VUV TGM, Czech Statistical Office, Czech Police, internal collateral registry
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true - only fields strictly necessary for ESG risk profiling and collateral assessment are collected"
+    right_to_erasure: "false - no personal data is processed; erasure obligations do not apply"
+    purpose_limitation: "true - processing is strictly limited to ESG risk assessment, underwriting support, and regulatory reporting"
+
+owner: Horizon AI Bank
+
+contact:
+  name: Juraj Cery
+  email: juraj.cery@horizon-ai-bank.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: esg_risk
+    table: climate_transition_risk_profile
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: esg_risk
+    table: climate_transition_risk_profile
+
+schema:
+  - name: climate_transition_risk_profile
+    description: Aggregated ESG climate and transition risk profile for financed buildings and collateral objects
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - geographic partitioning"
+
+      - name: building_id
+        type: string
+        description: Unique identifier of the building collateral object
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - data lineage and traceability of risk-relevant collateral data"
+
+      - name: collateral_type
+        type: string
+        description: Collateral category of the financed building
+        required: true
+        enum: [RESIDENTIAL, COMMERCIAL, MIXED_USE, INDUSTRIAL]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL/2020/06 - collateral classification for underwriting and valuation"
+
+      - name: flood_zone
+        type: string
+        description: Flood risk zone classification derived from public hydrological registries
+        required: false
+        enum: [LOW, MEDIUM, HIGH, SEVERE]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV - climate-related physical risk assessment"
+
+      - name: avg_temperature_5y
+        type: float
+        description: Average temperature over the last five years for the building location in degrees Celsius
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL/2022/03 - climate physical risk indicators in ICAAP"
+
+      - name: transition_risk_score
+        type: float
+        description: Transition risk score of the building on a scale of 0 to 100
+        required: true
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV - transition risk measurement for climate-sensitive exposures"
+
+      - name: physical_risk_score
+        type: float
+        description: Physical climate risk score of the building on a scale of 0 to 100
+        required: true
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV - physical risk measurement for climate-sensitive exposures"
+
+      - name: esg_risk_score
+        type: float
+        description: Composite ESG risk score of the building on a scale of 0 to 100
+        required: true
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL on loan origination and monitoring - ESG collateral assessment in underwriting"
+
+      - name: energy_label
+        type: string
+        description: Estimated energy performance class of the building
+        required: false
+        enum: [A, B, C, D, E, F, G]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EPBD-aligned collateral sustainability assessment under internal ESG governance"
+
+      - name: climate_data_confidence
+        type: float
+        description: Confidence score of the aggregated climate and ESG input data on a scale of 0 to 1
+        required: true
+        minimum: 0
+        maximum: 1
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - data quality transparency for risk aggregation"
+
+      - name: data_source
+        type: string
+        description: Dominant source system or model used to assemble the risk profile
+        required: true
+        enum: [ICM_GEN_AI, CHMI, VUV_TGM, CSO, CZECH_POLICE, INTERNAL_COLLATERAL_REGISTRY]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - source lineage traceability and auditability"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+  - rule: not_null
+    field: building_id
+  - rule: unique
+    field: building_id
+  - rule: not_null
+    field: esg_risk_score
+  - rule: range
+    field: esg_risk_score
+    min: 0
+    max: 100
+  - rule: range
+    field: physical_risk_score
+    min: 0
+    max: 100
+  - rule: range
+    field: transition_risk_score
+    min: 0
+    max: 100
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+  - rule: accepted_values
+    field: energy_label
+    values: [A, B, C, D, E, F, G]
+  - rule: row_count
+    min: 10000
+    max: 2500000
+    description: "Detects data distribution anomalies (volume drop/spike) for the financed building portfolio"
+
+sla:
+  availability: 99.5%
+  data_latency: D+1
+  retention_period: 36 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: ESG Risk
+    business_owner: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    product_owner: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    data_steward: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    tags:
+      - ESG
+      - Climate Risk
+      - Transition Risk
+      - Collateral
+      - AI-generated
+    classification: "ESG Risk Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: CHMI
+          type: public-registry
+          description: "Source of long-term weather and temperature indicators"
+        - name: VUV TGM
+          type: public-registry
+          description: "Source of flood-zone and hydrological exposure indicators"
+        - name: Czech Statistical Office
+          type: public-registry
+          description: "Source of regional socio-economic context indicators"
+        - name: Czech Police
+          type: public-registry
+          description: "Source of local crime indicators used in social risk context"
+        - name: Internal Collateral Registry
+          type: internal-system
+          description: "Source of building identifiers and collateral classification"
+        - name: ICM Gen AI
+          type: internal-ai-system
+          description: "Internal AI model used to derive and enrich composite ESG and transition risk scores"
+      downstream:
+        - name: Underwriting Decision Support
+          type: data-product
+          description: "Consumes ESG risk profile during credit origination and manual review"
+        - name: Portfolio Risk Monitoring
+          type: data-product
+          description: "Consumes aggregated scores for segmentation, early warning, and management reporting"
+        - name: ESG Reporting
+          type: data-product
+          description: "Consumes ESG risk indicators for internal and regulatory ESG reporting"
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "building_id must not be null and must be unique"
+      - "esg_risk_score, physical_risk_score, and transition_risk_score must be in range [0, 100]"
+      - "Volume must be within expected range"
+    retention:
+      period: "36 months"
+      rationale: "Aligned with collateral lifecycle, model monitoring needs, and ESG audit requirements"
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Provides traceable, quality-controlled risk data with explicit lineage, quality rules, and D+1 timeliness for risk aggregation"
+      - regulation: BASEL IV
+        status: Contributes
+        reason: "Contains physical and transition climate risk indicators that can inform capital and exposure assessment"
+      - regulation: EBA
+        status: Contributes
+        reason: "Supports ESG-aware credit origination, collateral monitoring, and ICAAP-aligned risk management"
+      - regulation: DORA
+        status: Contributes
+        reason: "Documented SLA, ownership, and source lineage strengthen operational resilience and control expectations"
+      - regulation: AML
+        status: N/A
+        reason: "No transaction monitoring, sanctions screening, or customer due diligence data is present"
+      - regulation: MiFID II
+        status: N/A
+        reason: "No investment product, trading, or client suitability data is present"
+      - regulation: PSD2
+        status: N/A
+        reason: "No payment services or open banking data is present"
+      - regulation: GDPR
+        status: N/A
+        reason: "No personal data is processed because the product describes buildings and collateral objects rather than natural persons"
+      - regulation: AI Act
+        status: Contributes
+        reason: "The product is used as input to and partly enriched by an AI-assisted scoring process supporting creditworthiness decisions"
+      - regulation: IFRS 9
+        status: Contributes
+        reason: "Climate and transition risk indicators may support forward-looking risk overlays and staging analysis in credit risk processes"
+    ai_act:
+      is_ai_input: true
+      is_ai_output: true
+      high_risk_classification: true
+      fria_required: true
+      fria_notes: "This product is used in an AI-assisted credit risk and collateral assessment process. Affected persons include loan applicants and collateral owners whose financing conditions may be influenced by ESG risk indicators. Rights at risk include non-discrimination, explainability, and the ability to contest materially relevant automated recommendations. Bias mitigation requires geographic coverage testing, periodic model back-testing, documented human review before adverse decisions, and monitoring of drift in public source data."
+  glossary_entry:
+    term: "Climate Exposure and Transition Risk Profile"
+    definition: "A governed analytical profile that aggregates physical climate exposure, transition risk, and ESG indicators for financed buildings and collateral objects to support underwriting and portfolio risk management."
+    fibo_class: "fibo-loan:CollateralCharacteristic"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/CollateralCharacteristic"
+    domain: ESG Risk
+    dawiso_status: draft
+    steward: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    synonyms:
+      - Climate Risk Profile
+      - ESG Building Risk Profile
+      - Transition Exposure Profile
+    acronyms:
+      - ESG
+    related_capability: "Collateral ESG Assessment and Climate Risk Monitoring"
+    related_terms:
+      - "Physical Climate Risk"
+      - "Transition Risk"
+      - "Collateral Valuation"
+      - "Energy Performance Label"
+      - "ESG Risk Score"
