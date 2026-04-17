@@ -1,32 +1,38 @@
-═══════════════════════════════════════════════════════════
- Horizon AI Bank — Data Contract Validation Report (prompt v3.3)
-═══════════════════════════════════════════════════════════
+===========================================================
+ Horizon AI Bank - Data Contract Validation Report (prompt v3.3)
+===========================================================
 
-  ✅  team1-digi/retail_sales_vehicle_insurance_propensity_state.yaml  →  all checks passed
+  [OK]  team1-digi/retail_sales_vehicle_insurance_propensity_state.yaml -> all checks passed
 
-  ✅  team1-digi/strategy_marketing_performance_acquisition_aggregation.yaml  →  all checks passed
+  [OK]  team1-digi/strategy_marketing_performance_acquisition_aggregation.yaml -> all checks passed
 
-  ✅  team2-Data-Governance/data-governance-contract-inventory-state.yml  →  all checks passed
+  [OK]  team2-Data-Governance/data-governance-contract-inventory-state.yml -> all checks passed
 
-  ✅  team4-steering-data/accounting_deviation_snapshot.yml  →  all checks passed
+  [OK]  team3-client-service/customer_service_customer_profile_data_contract.yaml -> all checks passed
 
-  ✅  team5-esg-risk/esg_risk_energy_profile.yaml  →  all checks passed
+  [OK]  team3-client-service/customer_service_interaction_events_data_contract.yaml -> all checks passed
 
-  ✅  team5-esg-risk/esg_risk_score_profile.yaml  →  all checks passed
+  [OK]  team3-client-service/customer_service_kpi_performance_data_contract.yaml -> all checks passed
 
-  ✅  team6-strategy/strategy_knowledge_snapshot.yaml  →  all checks passed
+  [OK]  team4-steering-data/accounting_deviation_snapshot.yml -> all checks passed
 
-  ✅  team6-strategy/strategy_market_rate_snapshot.yaml  →  all checks passed
+  [OK]  team5-esg-risk/esg_risk_energy_profile.yaml -> all checks passed
 
-  ✅  team7-gen-ai/credit-risk-credit-memo-profile.yml  →  all checks passed
+  [OK]  team5-esg-risk/esg_risk_score_profile.yaml -> all checks passed
 
-  ✅  team7-gen-ai/credit-risk-early-warning-history.yml  →  all checks passed
+  [OK]  team6-strategy/strategy_knowledge_snapshot.yaml -> all checks passed
 
-  ✅  team8-investment-banking/investment_corporate_snapshot.yml  →  all checks passed
+  [OK]  team6-strategy/strategy_market_rate_snapshot.yaml -> all checks passed
 
-  ✅  team8-investment-banking/investment_peer_benchmark_profile.yml  →  all checks passed
+  [OK]  team7-gen-ai/credit-risk-credit-memo-profile.yml -> all checks passed
 
-───────────────────────────────────────────────────────────
- Files checked : 12
+  [OK]  team7-gen-ai/credit-risk-early-warning-history.yml -> all checks passed
+
+  [OK]  team8-investment-banking/investment_corporate_snapshot.yml -> all checks passed
+
+  [OK]  team8-investment-banking/investment_peer_benchmark_profile.yml -> all checks passed
+
+-----------------------------------------------------------
+ Files checked : 15
  Total issues  : 0
-───────────────────────────────────────────────────────────
+-----------------------------------------------------------

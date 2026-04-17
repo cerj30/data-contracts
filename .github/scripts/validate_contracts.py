@@ -5,15 +5,16 @@ Checks: core structure, x-compliance (incl. regulatory_basis), extended GDPR,
         regulatory_mapping (10 regulations), AI Act / FRIA, and FIBO glossary entry.
 """
 
-import os
-import sys
-import yaml
 import glob
+import sys
+from pathlib import Path
+
+import yaml
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
 CONTRACT_GLOBS = ["**/*.yml", "**/*.yaml"]
-REPORT_PATH   = "validation_report.txt"
+REPORT_PATH = Path("validation_report.txt")
 
 # 10 mandatory regulations from prompt v3.3
 REQUIRED_REGULATIONS = [
@@ -29,14 +30,23 @@ VALID_LEGAL_BASES = {
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def err(path, msg):
-    return f"  ❌  [{path}] {msg}"
+REPORT_WIDTH = 59
 
-def warn(path, msg):
-    return f"  ⚠️   [{path}] {msg}"
+
+def format_path(path):
+    return Path(path).as_posix()
+
+
+def err(path, msg):
+    return f"  [ERR] [{format_path(path)}] {msg}"
+
 
 def ok(msg):
-    return f"  ✅  {msg}"
+    return f"  [OK]  {msg}"
+
+
+def rule_title(char):
+    return char * REPORT_WIDTH
 
 # ── Validation rules ──────────────────────────────────────────────────────────
 
@@ -95,7 +105,7 @@ def check_fields_compliance(path, doc, issues):
                     issues.append(err(path, f"field '{fname}' is PII but legal_basis is missing"))
                 elif lb not in VALID_LEGAL_BASES:
                     issues.append(err(path, f"field '{fname}' legal_basis '{lb}' is not valid "
-                                           f"(must be one of: {', '.join(VALID_LEGAL_BASES)})"))
+                                           f"(must be one of: {', '.join(sorted(VALID_LEGAL_BASES))})"))
 
             # v3.3 — regulatory_basis required on every field
             if not xc.get("regulatory_basis"):
@@ -126,12 +136,12 @@ def check_quality(path, doc, issues):
     for r in quality:
         rule_name = r.get("rule")
         if rule_name not in VALID_RULES:
-            issues.append(err(path, f"Neplatný quality rule `{rule_name}` "
-                                    f"(povolené: {sorted(VALID_RULES)})"))
+            issues.append(err(path, f"Invalid quality rule '{rule_name}' "
+                                    f"(allowed: {sorted(VALID_RULES)})"))
             continue
         # field is required only for field-level rules
         if rule_name not in TABLE_LEVEL_RULES and not r.get("field"):
-            issues.append(err(path, f"Quality pravidlo `{rule_name}` chybí `field`"))
+            issues.append(err(path, f"Quality rule '{rule_name}' is missing 'field'"))
 
 
 def check_regulatory_mapping(path, doc, issues):
@@ -152,7 +162,7 @@ def check_regulatory_mapping(path, doc, issues):
         stat = entry.get("status")
         if stat not in VALID_STATUSES:
             issues.append(err(path, f"regulatory_mapping '{reg}' has invalid status '{stat}' "
-                                    f"(must be one of: {', '.join(VALID_STATUSES)})"))
+                                    f"(must be one of: {', '.join(sorted(VALID_STATUSES))})"))
         if not entry.get("reason"):
             issues.append(err(path, f"regulatory_mapping '{reg}' is missing a reason (v3.3)"))
 
@@ -200,6 +210,8 @@ def validate_file(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
             doc = yaml.safe_load(f)
+    except (OSError, UnicodeDecodeError) as e:
+        return [err(path, f"File read error: {e}")]
     except yaml.YAMLError as e:
         return [err(path, f"YAML parse error: {e}")]
 
@@ -218,56 +230,62 @@ def validate_file(path):
     return issues
 
 
+def discover_contract_files():
+    matches = {
+        format_path(path)
+        for pattern in CONTRACT_GLOBS
+        for path in glob.glob(pattern, recursive=True)
+        if ".github" not in Path(path).parts
+        and "_template" not in Path(path).parts
+        and "node_modules" not in Path(path).parts
+    }
+    return sorted(matches)
+
+
 def main():
-    files = [
-        f for pattern in CONTRACT_GLOBS
-        for f in glob.glob(pattern, recursive=True)
-        if ".github" not in f and "node_modules" not in f
-    ]
+    files = discover_contract_files()
 
     if not files:
-        print("⚠️  No YAML contract files found.")
-        sys.exit(0)
+        print("[WARN] No YAML contract files found.")
+        return 0
 
     total_files  = len(files)
     total_issues = 0
     report_lines = [
-        "═══════════════════════════════════════════════════════════",
-        " Horizon AI Bank — Data Contract Validation Report (prompt v3.3)",
-        "═══════════════════════════════════════════════════════════",
+        rule_title("="),
+        " Horizon AI Bank - Data Contract Validation Report (prompt v3.3)",
+        rule_title("="),
         "",
     ]
 
-    for path in sorted(files):
+    for path in files:
         issues = validate_file(path)
         if issues:
             total_issues += len(issues)
-            report_lines.append(f"📄 {path}  →  {len(issues)} issue(s)")
+            report_lines.append(f"[FILE] {path} -> {len(issues)} issue(s)")
             report_lines.extend(issues)
         else:
-            report_lines.append(ok(f"{path}  →  all checks passed"))
+            report_lines.append(ok(f"{path} -> all checks passed"))
         report_lines.append("")
 
     report_lines += [
-        "───────────────────────────────────────────────────────────",
+        rule_title("-"),
         f" Files checked : {total_files}",
         f" Total issues  : {total_issues}",
-        "───────────────────────────────────────────────────────────",
+        rule_title("-"),
     ]
 
     report = "\n".join(report_lines)
+    REPORT_PATH.write_text(report + "\n", encoding="utf-8")
     print(report)
 
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
-        f.write(report)
-
     if total_issues > 0:
-        print(f"\n❌ Validation failed — {total_issues} issue(s) found. See {REPORT_PATH}")
-        sys.exit(1)
-    else:
-        print(f"\n✅ All {total_files} contract(s) passed validation.")
-        sys.exit(0)
+        print(f"\n[FAIL] Validation failed - {total_issues} issue(s) found. See {REPORT_PATH}")
+        return 1
+
+    print(f"\n[PASS] All {total_files} contract(s) passed validation.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
