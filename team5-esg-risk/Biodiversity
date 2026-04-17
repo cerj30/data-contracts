@@ -1,0 +1,342 @@
+dataContractSpecification: 1.1.0
+id: esg-biodiversity-physical-hazard-profile-v1-0-0
+info:
+  title: Biodiversity & Physical Hazard Profile
+  name: Biodiversity & Physical Hazard Profile
+  product_type: AGGREGATION
+  maturity_score: 70%
+  version: 1.0.0
+  status: draft
+  description: |
+    Daily curated ESG profile focused on biodiversity sensitivity and physical hazard exposure for financed buildings and collateral objects.
+    Data latency: D+1
+    Business Entity: Building
+    Business Purpose: Support underwriting, collateral monitoring, insurance alignment, and ESG portfolio segmentation with biodiversity and physical hazard indicators.
+    Consumers: Underwriting, Collateral Management, Portfolio Risk, ESG Reporting
+    Data Sources: CHMI, VUV TGM, Czech Environmental Information Agency, Czech Statistical Office, internal collateral registry
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true - only fields necessary for biodiversity and physical hazard assessment are collected"
+    right_to_erasure: "false - no personal data is processed; erasure obligations do not apply"
+    purpose_limitation: "true - processing is strictly limited to ESG risk assessment, collateral monitoring, and reporting"
+
+owner: Horizon AI Bank
+
+contact:
+  name: Juraj Cery
+  email: juraj.cery@horizon-ai-bank.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: esg_risk
+    table: biodiversity_physical_hazard_profile
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: esg_risk
+    table: biodiversity_physical_hazard_profile
+
+schema:
+  - name: biodiversity_physical_hazard_profile
+    description: Aggregated ESG profile for biodiversity sensitivity and physical hazard exposure of financed buildings
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - timeliness of risk data reporting"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - geographic partitioning"
+
+      - name: building_id
+        type: string
+        description: Unique identifier of the building collateral object
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - data lineage and traceability of risk-relevant collateral data"
+
+      - name: collateral_type
+        type: string
+        description: Collateral category of the financed building
+        required: true
+        enum: [RESIDENTIAL, COMMERCIAL, MIXED_USE, INDUSTRIAL]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL/2020/06 - collateral classification for underwriting and valuation"
+
+      - name: biodiversity_sensitivity_score
+        type: float
+        description: Biodiversity sensitivity score of the location on a scale of 0 to 100
+        required: true
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal ESG governance - environmental sensitivity assessment for collateral"
+
+      - name: flood_zone
+        type: string
+        description: Flood risk zone classification derived from hydrological registries
+        required: false
+        enum: [LOW, MEDIUM, HIGH, SEVERE]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV - climate-related physical risk assessment"
+
+      - name: wildfire_exposure_score
+        type: float
+        description: Wildfire exposure score of the building location on a scale of 0 to 100
+        required: false
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV - physical climate hazard assessment"
+
+      - name: heat_stress_score
+        type: float
+        description: Heat stress exposure score for the building location on a scale of 0 to 100
+        required: false
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL/2022/03 - climate physical risk indicators in ICAAP"
+
+      - name: water_stress_score
+        type: float
+        description: Water stress score of the building location on a scale of 0 to 100
+        required: false
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL/2022/03 - environmental risk indicators for ESG monitoring"
+
+      - name: physical_hazard_score
+        type: float
+        description: Composite physical hazard score of the building on a scale of 0 to 100
+        required: true
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BASEL IV - physical risk measurement for climate-sensitive exposures"
+
+      - name: esg_environmental_score
+        type: float
+        description: Composite environmental ESG score of the building on a scale of 0 to 100
+        required: true
+        minimum: 0
+        maximum: 100
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "EBA GL on loan origination and monitoring - environmental collateral assessment"
+
+      - name: source_snapshot_date
+        type: date
+        description: Snapshot date of the latest environmental source dataset used for scoring
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - source traceability and auditability"
+
+      - name: data_source
+        type: string
+        description: Dominant source system used to assemble the profile
+        required: true
+        enum: [CHMI, VUV_TGM, CENIA, CSO, INTERNAL_COLLATERAL_REGISTRY]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - source lineage traceability and auditability"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+  - rule: not_null
+    field: building_id
+  - rule: unique
+    field: building_id
+  - rule: not_null
+    field: biodiversity_sensitivity_score
+  - rule: not_null
+    field: physical_hazard_score
+  - rule: not_null
+    field: esg_environmental_score
+  - rule: range
+    field: biodiversity_sensitivity_score
+    min: 0
+    max: 100
+  - rule: range
+    field: physical_hazard_score
+    min: 0
+    max: 100
+  - rule: range
+    field: esg_environmental_score
+    min: 0
+    max: 100
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+  - rule: row_count
+    min: 10000
+    max: 2500000
+    description: "Detects data distribution anomalies (volume drop/spike) for the financed building portfolio"
+
+sla:
+  availability: 99.5%
+  data_latency: D+1
+  retention_period: 36 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: ESG Risk
+    business_owner: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    product_owner: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    data_steward: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    tags:
+      - ESG
+      - Biodiversity
+      - Physical Hazard
+      - Climate Risk
+      - Collateral
+    classification: "ESG Risk Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: CHMI
+          type: public-registry
+          description: "Source of heat and weather-related hazard indicators"
+        - name: VUV TGM
+          type: public-registry
+          description: "Source of flood and hydrological exposure indicators"
+        - name: CENIA
+          type: public-registry
+          description: "Source of biodiversity and environmental sensitivity indicators"
+        - name: Czech Statistical Office
+          type: public-registry
+          description: "Source of regional contextual indicators"
+        - name: Internal Collateral Registry
+          type: internal-system
+          description: "Source of building identifiers and collateral classification"
+      downstream:
+        - name: Underwriting Decision Support
+          type: data-product
+          description: "Consumes environmental and hazard indicators during credit origination"
+        - name: Portfolio Risk Monitoring
+          type: data-product
+          description: "Uses the product for segmentation, concentration analysis, and early warning"
+        - name: ESG Reporting
+          type: data-product
+          description: "Consumes biodiversity and physical hazard indicators for internal and regulatory reporting"
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "building_id must not be null and must be unique"
+      - "biodiversity_sensitivity_score, physical_hazard_score, and esg_environmental_score must be in range [0, 100]"
+      - "Volume must be within expected range"
+    retention:
+      period: "36 months"
+      rationale: "Aligned with collateral lifecycle, risk trend analysis, and ESG audit requirements"
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Provides traceable, quality-controlled environmental risk data with explicit lineage and timeliness"
+      - regulation: BASEL IV
+        status: Contributes
+        reason: "Contains physical hazard indicators relevant for climate-sensitive exposure assessment"
+      - regulation: EBA
+        status: Contributes
+        reason: "Supports ESG-aware credit origination, collateral monitoring, and environmental risk oversight"
+      - regulation: DORA
+        status: Contributes
+        reason: "Documented SLA, ownership, and source lineage strengthen operational resilience expectations"
+      - regulation: AML
+        status: N/A
+        reason: "No transaction monitoring, sanctions, or customer due diligence data is present"
+      - regulation: MiFID II
+        status: N/A
+        reason: "No investment, trading, or suitability data is present"
+      - regulation: PSD2
+        status: N/A
+        reason: "No payment services or open banking data is present"
+      - regulation: GDPR
+        status: N/A
+        reason: "No personal data is processed because the product describes buildings and environmental indicators only"
+      - regulation: AI Act
+        status: N/A
+        reason: "This version of the product is assembled from governed source datasets and is not produced by an AI model"
+      - regulation: IFRS 9
+        status: Contributes
+        reason: "Environmental and hazard indicators may support forward-looking overlays in credit risk analysis"
+    ai_act:
+      is_ai_input: false
+      is_ai_output: false
+      high_risk_classification: false
+      fria_required: false
+      fria_notes: "FRIA not required because this product is not generated by AI and is not designed as a direct AI input in this contract version."
+  glossary_entry:
+    term: "Biodiversity and Physical Hazard Profile"
+    definition: "A governed analytical profile that aggregates biodiversity sensitivity and physical hazard indicators for financed buildings and collateral objects to support underwriting and portfolio risk management."
+    fibo_class: "fibo-loan:CollateralCharacteristic"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/LOAN/LoansGeneral/CollateralCharacteristic"
+    domain: ESG Risk
+    dawiso_status: draft
+    steward: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    synonyms:
+      - Environmental Hazard Profile
+      - Biodiversity Risk Profile
+      - Building Hazard Profile
+    acronyms:
+      - ESG
+    related_capability: "Environmental Collateral Risk Assessment"
+    related_terms:
+      - "Biodiversity Sensitivity"
+      - "Physical Climate Risk"
+      - "Flood Zone"
+      - "Heat Stress"
+      - "Collateral Valuation"
