@@ -5,9 +5,10 @@ info:
   name: Energetický štítek Sustainability Score 2.0
   product_type: AGGREGATION
   maturity_score: 30%
-  version: 0.1.0
+  version: 0.2.0
   status: draft
   description: |
+    DAWISO VISUAL TEST: Energetický štítek Sustainability Score 2.0
     Data latency: D+1
     Business Entity: Building (Budova)
     Business Purpose: Calculation of ESG score for credit approval and collateral valuation purposes.
@@ -190,6 +191,7 @@ x-dawiso:
     tags:
       - ESG
       - ESG Score
+      - DAWISO-VISUAL-TEST
       - Climate Risk
       - Social Risk
       - Collateral Valuation
@@ -293,7 +295,7 @@ x-dawiso:
     synonyms:
       - ESG Rating
       - Environmental Social Governance Score
-      - Sustainability Score
+      - Sustainability Score 2.0
     acronyms:
       - ESG
     related_capability: "Collateral ESG Assessment / Climate and Social Risk Scoring"
