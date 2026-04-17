@@ -6,7 +6,7 @@ info:
   name: retail_sales_vehicle_insurance_propensity_state
   product_type: STATE
   maturity_score: 30%
-  version: 0.1.0
+  version: 0.1.1
   status: draft
   description: |
     Data latency: Daily (D+1); selected behavioral signals near real-time
