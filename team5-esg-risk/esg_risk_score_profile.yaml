@@ -1,8 +1,8 @@
 dataContractSpecification: 1.1.0
 id: esg-score-v0-1-0
 info:
-  title: ESG score
-  name: ESG score
+  title: Energetický štítek Sustainability Score 2.0
+  name: Energetický štítek Sustainability Score 2.0
   product_type: AGGREGATION
   maturity_score: 30%
   version: 0.1.0
