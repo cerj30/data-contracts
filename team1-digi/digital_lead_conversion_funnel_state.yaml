@@ -1,0 +1,345 @@
+dataContractSpecification: 1.1.0
+id: urn:horizon:retail-sales:digital-lead-conversion-funnel-state
+
+info:
+  title: Digital Lead Conversion Funnel State
+  name: digital_lead_conversion_funnel_state
+  product_type: STATE
+  maturity_score: 45%
+  version: 0.1.0
+  status: draft
+  description: |
+    Provides a consolidated daily state of digital sales leads across the acquisition and conversion funnel.
+    Tracks lead creation, qualification, offer progression, and completed conversion outcomes across digital channels.
+    Supports campaign effectiveness evaluation, sales funnel optimization, and digital retail sales performance reporting.
+    Data latency: Daily
+    Business Entity: Digital Lead
+    Business Purpose: Digital Sales Funnel Monitoring and Conversion Performance Reporting
+    Consumers: Digital Sales Management, Campaign Managers, Sales Operations, Data Stewards
+    Data Sources: CRM Lead Management, Web Funnel Events, Campaign Attribution Platform, Product Application System
+
+  x-regulatory:
+    gdpr_relevant: true
+    critical_data_element: true
+    regulatory_framework: "GDPR"
+    data_minimization: "true"
+    right_to_erasure: "true"
+    purpose_limitation: "true"
+
+owner: "Horizon AI Bank / Team - Digi Prodej / Retail Sales"
+contact:
+  name: Diana Temerbulatova
+  email: diana.temerbulatova@horizon-ai-bank.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: retail-sales-prod
+    table: digital_lead_conversion_funnel_state
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: retail-sales-dev
+    table: digital_lead_conversion_funnel_state
+
+schema:
+  - name: digital_lead_conversion_funnel_state
+    description: Daily summarized view of digital lead progression across acquisition, qualification, and conversion stages.
+    fields:
+      - name: lead_funnel_state_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Operational reporting timeliness"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — regional reporting partitioning"
+
+      - name: acquisition_channel
+        type: string
+        description: Primary digital acquisition channel
+        required: true
+        enum: [PAID_SEARCH, DISPLAY, SOCIAL_MEDIA, AFFILIATE, ORGANIC, DIRECT]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Marketing attribution governance"
+
+      - name: campaign_name
+        type: string
+        description: Campaign or promotion name associated with the lead group
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Campaign performance evaluation"
+
+      - name: product_type
+        type: string
+        description: Retail product associated with the lead
+        required: true
+        enum: [CURRENT_ACCOUNT, PERSONAL_LOAN, CREDIT_CARD, MORTGAGE, SAVINGS, INSURANCE]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Retail sales product funnel management"
+
+      - name: funnel_stage
+        type: string
+        description: Current stage of the digital lead in the conversion funnel
+        required: true
+        enum: [CREATED, QUALIFIED, OFFERED, APPLICATION_STARTED, APPLICATION_SUBMITTED, CONVERTED, DROPPED]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Digital sales pipeline governance"
+
+      - name: lead_count
+        type: integer
+        description: Number of leads in the summarized group
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Retail sales workload monitoring"
+
+      - name: converted_count
+        type: integer
+        description: Number of leads that completed conversion
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Sales conversion monitoring"
+
+      - name: dropped_count
+        type: integer
+        description: Number of leads dropped from the funnel
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Funnel attrition monitoring"
+
+      - name: conversion_rate
+        type: number
+        description: Share of converted leads on total leads in the summarized group (0-1)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Sales performance reporting"
+
+      - name: avg_days_to_conversion
+        type: number
+        description: Average number of days from lead creation to conversion
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Commercial process efficiency measurement"
+
+      - name: attributed_cost_czk
+        type: number
+        description: Total attributed acquisition cost in CZK for the summarized lead group
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Marketing cost governance"
+
+      - name: contains_personal_data
+        type: boolean
+        description: Indicates whether underlying source lead records contain personal data
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Confidential
+          regulatory_basis: "GDPR — data classification awareness"
+
+quality:
+  - rule: not_null
+    field: lead_funnel_state_id
+  - rule: unique
+    field: lead_funnel_state_id
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+  - rule: accepted_values
+    field: funnel_stage
+    values: [CREATED, QUALIFIED, OFFERED, APPLICATION_STARTED, APPLICATION_SUBMITTED, CONVERTED, DROPPED]
+  - rule: row_count
+    min: 100
+    max: 50000
+    description: "Detects anomalies in daily digital funnel volume"
+  - rule: range
+    field: conversion_rate
+    min: 0
+    max: 1
+  - rule: range
+    field: avg_days_to_conversion
+    min: 0
+    max: 180
+
+sla:
+  availability: 99.7%
+  data_latency: Daily
+  retention_period: 24 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Retail Sales
+    business_owner: Head of Digital Sales
+    product_owner: "Diana Temerbulatova - diana.temerbulatova@horizon-ai-bank.cz"
+    data_steward: Retail Sales Data Steward
+    tags:
+      - retail-sales
+      - digital-sales
+      - funnel
+      - conversion
+      - state
+    classification: "Internal Data Product"
+    data_classification: Confidential
+    lineage:
+      upstream:
+        - name: CRM Lead Management
+          type: internal-system
+          description: "Provides lead lifecycle, qualification, and ownership data"
+        - name: Web Funnel Events
+          type: internal-system
+          description: "Provides digital journey events from landing pages and application funnels"
+        - name: Campaign Attribution Platform
+          type: internal-system
+          description: "Provides acquisition channel and campaign attribution metadata"
+        - name: Product Application System
+          type: internal-system
+          description: "Provides submitted applications and conversion outcomes"
+      downstream:
+        - name: Digital Sales Performance Dashboard
+          type: data-product
+          description: "Consumes funnel and conversion metrics for sales performance tracking"
+        - name: Marketing Acquisition Reporting
+          type: data-product
+          description: "Consumes acquisition and conversion efficiency data for campaign optimization"
+        - name: Retail Sales Steering Pack
+          type: data-product
+          description: "Uses aggregated digital funnel metrics for management reporting"
+    rules_ko:
+      - "lead_funnel_state_id must be a valid UUID v4"
+      - "conversion_rate must be between 0 and 1"
+      - "Daily funnel volume must be within expected range"
+    retention:
+      period: "24 months"
+      rationale: "Required for campaign performance trend analysis, funnel benchmarking, and audit support."
+    regulatory_mapping:
+      - regulation: GDPR
+        status: Contributes
+        reason: "Tracks whether underlying lead data includes personal data and supports governance over digital sales processing."
+      - regulation: DORA
+        status: Contributes
+        reason: "Supports monitoring of operational continuity and performance of digital sales processes."
+      - regulation: EBA
+        status: Contributes
+        reason: "Supports governance and traceability over retail sales acquisition and conversion metrics."
+      - regulation: PSD2
+        status: N/A
+        reason: "This product summarizes sales funnel performance and is not focused on payment-service execution data."
+      - regulation: AML
+        status: N/A
+        reason: "This product does not contain AML/KYC case handling data."
+      - regulation: MiFID II
+        status: N/A
+        reason: "This product is not an investment service reporting dataset."
+      - regulation: BCBS 239
+        status: N/A
+        reason: "This is a commercial retail sales performance dataset rather than a risk aggregation product."
+      - regulation: AI Act
+        status: N/A
+        reason: "This product summarizes digital sales operations and is not an AI input/output control artifact."
+    ai_act:
+      is_ai_input: false
+      is_ai_output: false
+      high_risk_classification: false
+      fria_required: false
+      fria_notes: "FRIA is not required — commercial funnel performance aggregate with no direct AI decisioning role."
+
+  glossary_entry:
+    term: "Digital Lead Conversion Funnel"
+    definition: "A structured sequence of stages through which a digitally acquired retail sales lead progresses from creation to successful product conversion or drop-off."
+    fibo_class: "fibo-fbc-fct-mkt:MarketingCampaign"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/"
+    domain: Retail Sales
+    dawiso_status: draft
+    steward: "Diana Temerbulatova - diana.temerbulatova@horizon-ai-bank.cz"
+    synonyms:
+      - "Digital Sales Funnel"
+      - "Lead Conversion Funnel"
+    acronyms: []
+    related_capability: "Digital Retail Sales"
+    related_terms:
+      - "Acquisition Channel"
+      - "Lead Qualification"
+      - "Conversion Rate"
+      - "Application Submission"
+
+  consumers:
+    primary_consumers:
+      - name: Digital Sales Management
+        type: business-unit
+        description: "Uses the product to monitor funnel progression, conversion, and sales efficiency."
+      - name: Campaign Managers
+        type: operational-team
+        description: "Use the product to evaluate acquisition channel effectiveness and campaign performance."
+      - name: Sales Operations
+        type: operational-team
+        description: "Uses the product to track bottlenecks and drop-off points in the retail sales funnel."
+    secondary_consumers:
+      - name: Data Stewards
+        type: governance-role
+        description: "Monitor ownership, quality, and business consistency of funnel data."
+      - name: Retail Sales Steering
+        type: management-function
+        description: "Uses aggregated digital sales funnel metrics for strategic oversight."
+
+  data_dictionary:
+    dataset_name: digital_lead_conversion_funnel_state
+    dataset_description: "Aggregated daily summary of digital retail sales leads across acquisition, funnel progression, and conversion outcomes."
+    source_systems:
+      - CRM Lead Management
+      - Web Funnel Events
+      - Campaign Attribution Platform
+      - Product Application System
+    business_keys:
+      - business_date
+      - region
+      - acquisition_channel
+      - product_type
+      - funnel_stage
+    sensitivity_overview: "Contains operational aggregates; underlying source lead data may contain personal data."
+    table_grain: "One row per business date, region, acquisition channel, product type, and funnel stage combination."
