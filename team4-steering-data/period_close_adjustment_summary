@@ -1,0 +1,286 @@
+dataContractSpecification: 1.1.0
+id: urn:horizon:accounting:period-close-adjustment-summary
+
+info:
+  title: Period Close Adjustment Summary
+  name: period_close_adjustment_summary
+  product_type: STATE
+  maturity_score: 35%
+  version: 0.1.0
+  status: draft
+  description: |
+    Summarizes accounting adjustments posted during month-end close across legal entities,
+    source systems, and adjustment categories. Supports transparency of closing activities,
+    improves control over manual journal entries, and strengthens audit readiness for
+    internal and head office reporting.
+    Data latency: Monthly
+    Business Entity: Accounting
+    Business Purpose: Month-End Close Monitoring and Adjustment Control
+    Consumers: Head Office (Parent Company), Accounting, Internal Audit, Data Stewards
+    Data Sources: General Ledger, Manual Journal Entry System, Period Close Control Logs
+
+  x-regulatory:
+    gdpr_relevant: false
+    critical_data_element: true
+    regulatory_framework: "BCBS 239"
+    data_minimization: "true"
+    right_to_erasure: "false"
+    purpose_limitation: "true"
+
+owner: "Horizon AI Bank / Team 4 / Accounting"
+contact:
+  name: Josef Kuník
+  email: josef.kunik@horizon-ai-bank.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: accounting-prod
+    table: period_close_adjustment_summary
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: accounting-dev
+    table: period_close_adjustment_summary
+
+schema:
+  - name: period_close_adjustment_summary
+    description: Aggregated month-end accounting adjustment summary by close date, entity, and adjustment category.
+    fields:
+      - name: adjustment_summary_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — surrogate key for audit traceability"
+
+      - name: close_date
+        type: date
+        description: Financial closing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — timeliness and consistency of reporting"
+
+      - name: legal_entity
+        type: string
+        description: Legal entity code of the reporting unit
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — financial reporting entity identification"
+
+      - name: region
+        type: string
+        description: Geographic region [CZ, SK]
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — geographic reporting partitioning"
+
+      - name: adjustment_category
+        type: string
+        description: Category of accounting adjustment
+        required: true
+        enum: [MANUAL_JOURNAL, RECLASSIFICATION, ACCRUAL, PROVISION, FX_REVALUATION]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS-based accounting control and categorization"
+
+      - name: source_system
+        type: string
+        description: Source system from which the adjustment originates
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — source traceability"
+
+      - name: gcoa_code
+        type: string
+        description: Group Chart of Accounts identifier
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "IFRS 9 — financial mapping and aggregation requirements"
+
+      - name: adjustment_count
+        type: integer
+        description: Number of adjustment entries included in the summary
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — close monitoring"
+
+      - name: adjustment_amount_czk
+        type: number
+        description: Total adjustment amount in CZK
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 — financial accuracy and completeness"
+
+      - name: manual_adjustment_ratio
+        type: number
+        description: Share of manual adjustments on total adjustment volume (0-1)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — operational control metric"
+
+      - name: approved_by_finance
+        type: boolean
+        description: Indicates whether the summarized adjustment set was approved by Finance
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal control — evidence of financial approval"
+
+      - name: posting_status
+        type: string
+        description: Posting lifecycle status
+        required: true
+        enum: [POSTED, PENDING, REJECTED]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance — status tracking"
+
+quality:
+  - rule: not_null
+    field: adjustment_summary_id
+  - rule: unique
+    field: adjustment_summary_id
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+  - rule: accepted_values
+    field: posting_status
+    values: [POSTED, PENDING, REJECTED]
+  - rule: row_count
+    min: 50
+    max: 10000
+    description: "Detects anomalies in the monthly number of aggregated accounting adjustment groups"
+  - rule: range
+    field: manual_adjustment_ratio
+    min: 0
+    max: 1
+
+sla:
+  availability: 99.5%
+  data_latency: Monthly
+  retention_period: 24 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Accounting
+    business_owner: Head of Accounting
+    product_owner: "Josef Kuník - josef.kunik@horizon-ai-bank.cz"
+    data_steward: Accounting Data Steward
+    tags:
+      - accounting
+      - state
+      - month-end-close
+      - reconciliation
+      - adjustments
+    classification: "Internal Data Product"
+    data_classification: Internal
+    lineage:
+      upstream:
+        - name: General Ledger System
+          type: internal-system
+          description: "Provides booked accounting entries and balances"
+        - name: Manual Journal Entry System
+          type: internal-system
+          description: "Provides manually posted accounting adjustments"
+        - name: Period Close Control Logs
+          type: internal-system
+          description: "Provides operational close process checkpoints and approvals"
+      downstream:
+        - name: Head Office Reporting Platform
+          type: data-product
+          description: "Consumes summarized close adjustments for management and parent company reporting"
+        - name: Internal Audit Control Dashboard
+          type: data-product
+          description: "Uses adjustment metrics for audit sampling and control monitoring"
+    rules_ko:
+      - "adjustment_summary_id must be a valid UUID v4"
+      - "manual_adjustment_ratio must be between 0 and 1"
+      - "Volume must be within expected month-end range"
+    retention:
+      period: "24 months"
+      rationale: "Required for historical close-cycle analysis, audit support, and financial control reviews."
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Improves traceability and control over key accounting inputs used in financial and risk reporting."
+      - regulation: BASEL IV
+        status: Contributes
+        reason: "Supports reliability of financial baseline data used in capital-related calculations."
+      - regulation: EBA
+        status: Contributes
+        reason: "Strengthens governance and ownership over key accounting close metrics."
+      - regulation: DORA
+        status: Contributes
+        reason: "Documents resilience and availability expectations for critical financial reporting data."
+      - regulation: AML
+        status: N/A
+        reason: "Contains aggregated accounting control data without AML/KYC case information."
+      - regulation: MiFID II
+        status: N/A
+        reason: "Contains no investment transaction reporting data."
+      - regulation: PSD2
+        status: N/A
+        reason: "Contains no payment initiation or open banking data."
+      - regulation: GDPR
+        status: N/A
+        reason: "Product contains aggregated non-personal accounting data only."
+      - regulation: AI Act
+        status: N/A
+        reason: "This product is a financial control aggregate, not an AI input/output artifact."
+      - regulation: IFRS 9
+        status: Contributes
+        reason: "Improves control over accounting postings and adjustments affecting financial statement quality."
+    ai_act:
+      is_ai_input: false
+      is_ai_output: false
+      high_risk_classification: false
+      fria_required: false
+      fria_notes: "FRIA is not required — accounting control summary over aggregated non-personal financial data."
+
+  glossary_entry:
+    term: "Period Close Adjustment"
+    definition: "An accounting adjustment recorded during the financial closing process to ensure completeness, accuracy, and consistency of reported balances."
+    fibo_class: "fibo-fnd-acc-aeq:AccountingEntry"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FND/Accounting/AccountingEquity/AccountingEntry"
+    domain: Accounting
+    dawiso_status: draft
+    steward: "Josef Kuník - josef.kunik@horizon-ai-bank.cz"
+    synonyms:
+      - "Month-End Adjustment"
+      - "Closing Adjustment"
+    acronyms: []
+    related_capability: "Financial Close Control"
+    related_terms:
+      - "General Ledger"
+      - "Manual Journal Entry"
+      - "Financial Closing"
