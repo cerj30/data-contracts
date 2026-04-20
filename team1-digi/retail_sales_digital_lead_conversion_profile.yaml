@@ -1,0 +1,642 @@
+dataContractSpecification: 1.1.0
+id: retail-sales-digital-lead-conversion-profile-v1-0-0
+info:
+  title: Retail Sales Digital Lead Conversion Profile
+  name: Retail Sales Digital Lead Conversion Profile
+  product_type: STATE
+  maturity_score: 65%
+  version: 1.0.0
+  status: draft
+  description: |
+    Daily curated profile of digital sales leads and their conversion readiness across online channels.
+    Data latency: D+1
+    Business Entity: Digital Sales Lead
+    Business Purpose: Support digital sales prioritization, campaign optimization, lead nurturing, and product offer conversion tracking.
+    Consumers: Digi Prodej, CRM, Campaign Management, Sales Analytics, Contact Center
+    Data Sources: Web analytics, mobile app events, CRM, campaign manager, product offer engine
+  x-regulatory:
+    gdpr_relevant: true
+    critical_data_element: true
+    regulatory_framework: "GDPR"
+    data_minimization: "true - only pseudonymized lead, session, consent, channel, campaign, and conversion attributes necessary for digital sales management are collected"
+    right_to_erasure: "true - customer-related pseudonymous identifiers can be mapped by source systems for deletion or suppression workflows"
+    purpose_limitation: "true - processing is limited to digital sales lead management, campaign optimization, and consent-aware offer conversion analytics"
+
+owner: Horizon AI Bank \ Team1 \ Digi Prodej
+
+contact:
+  name: Juraj Cery
+  email: juraj.cery@horizon-ai-bank.cz
+
+servers:
+  PRODUCTION:
+    type: databricks
+    host: horizon-ai-bank-prod.cloud.databricks.com
+    environment: production
+    catalog: datamesh-horizon-ai-bank-prod
+    schema: retail_sales
+    table: digital_lead_conversion_profile
+  DEVELOPMENT:
+    type: databricks
+    host: horizon-ai-bank-dev.cloud.databricks.com
+    environment: development
+    catalog: datamesh-horizon-ai-bank-dev
+    schema: retail_sales
+    table: digital_lead_conversion_profile
+
+schema:
+  - name: digital_lead_conversion_profile
+    description: Current-state profile of digital sales leads, conversion stage, channel attribution, consent posture, and offer propensity
+    fields:
+      - name: record_id
+        type: string
+        description: Unique record identifier (UUID v4)
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - surrogate key for audit traceability"
+
+      - name: business_date
+        type: date
+        description: Business processing date (YYYY-MM-DD)
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - timeliness of risk and management data reporting"
+
+      - name: region
+        type: string
+        description: Geographic market of the digital lead
+        required: true
+        enum: [CZ, SK]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - geographic partitioning and market reporting"
+
+      - name: lead_id
+        type: string
+        description: Unique pseudonymous identifier of the digital sales lead
+        required: true
+        unique: true
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+          regulatory_basis: "GDPR Art. 6(1)(b) - processing necessary for requested digital sales journey and product offer handling"
+
+      - name: customer_pseudonym_id
+        type: string
+        description: Pseudonymized customer identifier if the lead can be matched to an existing customer
+        required: false
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Contractual
+          regulatory_basis: "GDPR Art. 6(1)(b) - pseudonymous customer matching for requested product offer processing"
+
+      - name: session_id
+        type: string
+        description: Pseudonymous digital session identifier used for funnel attribution
+        required: true
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Legitimate Interest
+          regulatory_basis: "GDPR Art. 6(1)(f) - legitimate interest in secure digital journey measurement and funnel attribution"
+
+      - name: channel
+        type: string
+        description: Primary digital or assisted channel where the lead was created
+        required: true
+        enum: [WEB, MOBILE_APP, CALL_CENTER, PARTNER, BRANCH_DIGITAL]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - sales channel attribution"
+
+      - name: product_family
+        type: string
+        description: Product family associated with the lead or offer
+        required: true
+        enum: [VEHICLE_INSURANCE, CONSUMER_LOAN, CREDIT_CARD, SAVINGS, MORTGAGE]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - product portfolio segmentation"
+
+      - name: campaign_id
+        type: string
+        description: Identifier of the marketing or sales campaign that influenced the lead
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - campaign performance attribution"
+
+      - name: lead_status
+        type: string
+        description: Current lifecycle status of the digital sales lead
+        required: true
+        enum: [CREATED, QUALIFIED, OFFERED, ACCEPTED, REJECTED, EXPIRED]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - lead lifecycle management"
+
+      - name: consent_marketing_flag
+        type: boolean
+        description: Indicates whether the customer or prospect has active marketing consent for the relevant digital journey
+        required: true
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Consent
+          regulatory_basis: "GDPR Art. 6(1)(a) - marketing consent management"
+
+      - name: consent_personalization_flag
+        type: boolean
+        description: Indicates whether personalization may be used for the digital offer journey
+        required: true
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Consent
+          regulatory_basis: "GDPR Art. 6(1)(a) - personalization consent management"
+
+      - name: propensity_score
+        type: float
+        description: Probability score from 0 to 1 estimating likelihood of lead conversion
+        required: true
+        minimum: 0
+        maximum: 1
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Legitimate Interest
+          regulatory_basis: "GDPR Art. 6(1)(f) - consent-aware sales prioritization and offer optimization"
+
+      - name: expected_value_amount
+        type: decimal
+        description: Expected commercial value of the lead in the product currency
+        required: false
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - sales performance and value prioritization"
+
+      - name: currency
+        type: string
+        description: Currency code for expected_value_amount
+        required: false
+        enum: [CZK, EUR]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - financial amount denomination"
+
+      - name: last_interaction_at
+        type: timestamp
+        description: Timestamp of the last digital or assisted interaction related to the lead
+        required: true
+        x-compliance:
+          is_pii: true
+          sensitivity: Confidential
+          legal_basis: Legitimate Interest
+          regulatory_basis: "GDPR Art. 6(1)(f) - digital journey continuity and sales follow-up management"
+
+      - name: created_at
+        type: timestamp
+        description: Timestamp when the lead profile was first created
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - audit trail for record creation"
+
+      - name: updated_at
+        type: timestamp
+        description: Timestamp when the lead profile was last updated
+        required: true
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "Internal governance - audit trail for record updates"
+
+      - name: data_source
+        type: string
+        description: Dominant source system used to assemble the profile
+        required: true
+        enum: [WEB_ANALYTICS, MOBILE_APP, CRM, CAMPAIGN_MANAGER, OFFER_ENGINE]
+        x-compliance:
+          is_pii: false
+          sensitivity: Internal
+          regulatory_basis: "BCBS 239 - source lineage traceability and auditability"
+
+quality:
+  - rule: not_null
+    field: record_id
+  - rule: unique
+    field: record_id
+  - rule: not_null
+    field: lead_id
+  - rule: unique
+    field: lead_id
+  - rule: not_null
+    field: business_date
+  - rule: not_null
+    field: lead_status
+  - rule: not_null
+    field: propensity_score
+  - rule: range
+    field: propensity_score
+    min: 0
+    max: 1
+  - rule: accepted_values
+    field: region
+    values: [CZ, SK]
+  - rule: accepted_values
+    field: channel
+    values: [WEB, MOBILE_APP, CALL_CENTER, PARTNER, BRANCH_DIGITAL]
+  - rule: accepted_values
+    field: lead_status
+    values: [CREATED, QUALIFIED, OFFERED, ACCEPTED, REJECTED, EXPIRED]
+  - rule: row_count
+    min: 1000
+    max: 5000000
+    description: "Detects data distribution anomalies (volume drop/spike) in the digital sales lead portfolio"
+
+sla:
+  availability: 99.5%
+  data_latency: D+1
+  retention_period: 36 months
+
+x-dawiso:
+  data_product:
+    dawiso_status: design
+    domain: Retail Sales
+    business_owner: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    product_owner: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    data_steward: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    tags:
+      - Digi Prodej
+      - Digital Sales
+      - Lead Conversion
+      - Campaign Attribution
+      - Propensity Scoring
+      - GDPR
+    classification: "Retail Sales Data Product"
+    data_classification: Confidential
+    lineage:
+      upstream:
+        - name: Web Analytics
+          type: internal-system
+          description: "Source of digital web sessions, campaign attribution, and funnel events"
+        - name: Mobile App
+          type: internal-system
+          description: "Source of mobile app lead and journey interactions"
+        - name: CRM
+          type: internal-system
+          description: "Source of lead lifecycle status and customer matching information"
+        - name: Campaign Manager
+          type: internal-system
+          description: "Source of campaign identifiers, consent-aware targeting, and campaign metadata"
+        - name: Offer Engine
+          type: internal-system
+          description: "Source of offer prioritization and propensity score outputs"
+      downstream:
+        - name: Digital Sales Dashboard
+          type: data-product
+          description: "Consumes lead profile data for daily sales funnel monitoring and channel performance"
+        - name: CRM Lead Prioritization
+          type: data-product
+          description: "Consumes lead status and propensity score for follow-up prioritization"
+        - name: Campaign Performance Analytics
+          type: data-product
+          description: "Consumes campaign attribution and conversion outcomes for campaign optimization"
+        - name: Contact Center Next Best Action
+          type: data-product
+          description: "Consumes consent-aware lead and product information for assisted sales follow-up"
+    rules_ko:
+      - "record_id must be a valid UUID v4"
+      - "lead_id must not be null and must be unique"
+      - "propensity_score must be in range [0, 1]"
+      - "lead_status must be one of [CREATED, QUALIFIED, OFFERED, ACCEPTED, REJECTED, EXPIRED]"
+      - "channel must be one of [WEB, MOBILE_APP, CALL_CENTER, PARTNER, BRANCH_DIGITAL]"
+      - "Volume must be within expected range"
+    retention:
+      period: "36 months"
+      rationale: "Aligned with sales performance monitoring, campaign optimization, consent auditability, and digital journey analysis"
+    regulatory_mapping:
+      - regulation: BCBS 239
+        status: Contributes
+        reason: "Provides traceable management data with documented lineage, quality controls, and D+1 timeliness"
+      - regulation: BASEL IV
+        status: N/A
+        reason: "No capital, RWA, or prudential risk calculation data is present"
+      - regulation: EBA
+        status: Contributes
+        reason: "Documented ownership, data quality, and lineage support broader data governance expectations"
+      - regulation: DORA
+        status: Contributes
+        reason: "SLA, ownership, and source lineage documentation support operational resilience expectations for important digital sales data"
+      - regulation: AML
+        status: N/A
+        reason: "No transaction monitoring, sanctions screening, or KYC verification data is present"
+      - regulation: MiFID II
+        status: N/A
+        reason: "No investment product, trading, suitability, or transaction reporting data is present"
+      - regulation: PSD2
+        status: N/A
+        reason: "No payment account access, payment initiation, or open banking data is present"
+      - regulation: GDPR
+        status: Both
+        reason: "The product contributes through explicit consent and PII classification controls, and is restricted by minimization, purpose limitation, and erasure requirements"
+      - regulation: AI Act
+        status: Contributes
+        reason: "The product contains propensity scoring used for sales prioritization and therefore documents AI-related input and output governance"
+      - regulation: IFRS 9
+        status: N/A
+        reason: "No expected credit loss, staging, impairment, or credit risk model data is present"
+    ai_act:
+      is_ai_input: true
+      is_ai_output: true
+      high_risk_classification: false
+      fria_required: false
+      fria_notes: "FRIA not required for this contract version because the propensity score is used for digital sales prioritization and campaign optimization, not for creditworthiness assessment, loan approval, pricing, or legally significant automated decisions. Monitoring is still required for fairness, consent compliance, and inappropriate exclusion of customer groups."
+
+  glossary_entry:
+    term: "Digital Lead Conversion Profile"
+    definition: "A current-state business profile describing a digital sales lead, its lifecycle status, consent posture, channel attribution, product interest, and likelihood of conversion."
+    fibo_class: "fibo-fbc-pas-caa:CustomerAccount"
+    fibo_uri: "https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/CustomerAccount"
+    domain: Retail Sales
+    dawiso_status: draft
+    steward: Juraj Cery - juraj.cery@horizon-ai-bank.cz
+    synonyms:
+      - Digital Sales Lead Profile
+      - Online Lead Conversion Profile
+      - Lead Funnel Profile
+    acronyms:
+      - DLP
+    related_capability: "Digital Sales Lead Management"
+    related_terms:
+      - "Digital Sales Lead"
+      - "Lead Status"
+      - "Campaign Attribution"
+      - "Propensity Score"
+      - "Marketing Consent"
+      - "Product Family"
+
+  code_lists:
+    - name: Digital Sales Channel
+      description: "Controlled list of channels where digital sales leads can be created or managed."
+      values:
+        - code: WEB
+          label: Web
+          description: "Lead originated from public web or internet banking web journey."
+        - code: MOBILE_APP
+          label: Mobile App
+          description: "Lead originated from mobile banking or mobile sales journey."
+        - code: CALL_CENTER
+          label: Call Center
+          description: "Lead originated from assisted call center interaction."
+        - code: PARTNER
+          label: Partner
+          description: "Lead originated from an external partner or aggregator."
+        - code: BRANCH_DIGITAL
+          label: Branch Digital
+          description: "Lead originated from branch-assisted digital journey."
+
+    - name: Digital Lead Status
+      description: "Controlled list describing the lifecycle state of a digital sales lead."
+      values:
+        - code: CREATED
+          label: Created
+          description: "Lead was created but has not yet been qualified."
+        - code: QUALIFIED
+          label: Qualified
+          description: "Lead passed basic eligibility and quality checks."
+        - code: OFFERED
+          label: Offered
+          description: "A product offer was presented to the lead."
+        - code: ACCEPTED
+          label: Accepted
+          description: "Lead accepted the offer or continued to product application."
+        - code: REJECTED
+          label: Rejected
+          description: "Lead rejected the offer or was rejected by eligibility logic."
+        - code: EXPIRED
+          label: Expired
+          description: "Lead was not converted within the valid time window."
+
+    - name: Retail Product Family
+      description: "Controlled list of product families used for digital sales lead classification."
+      values:
+        - code: VEHICLE_INSURANCE
+          label: Vehicle Insurance
+          description: "Vehicle insurance product family."
+        - code: CONSUMER_LOAN
+          label: Consumer Loan
+          description: "Consumer loan product family."
+        - code: CREDIT_CARD
+          label: Credit Card
+          description: "Credit card product family."
+        - code: SAVINGS
+          label: Savings
+          description: "Savings and deposit product family."
+        - code: MORTGAGE
+          label: Mortgage
+          description: "Mortgage product family."
+
+  consumers:
+    - name: Digi Prodej
+      type: business-team
+      purpose: "Daily monitoring and prioritization of digital sales leads."
+      access_pattern: "Dashboard and analytical query"
+      required_fields:
+        - lead_id
+        - channel
+        - product_family
+        - lead_status
+        - propensity_score
+        - consent_marketing_flag
+
+    - name: CRM
+      type: operational-system
+      purpose: "Lead follow-up, lifecycle status synchronization, and assisted sales workflows."
+      access_pattern: "Batch D+1 feed"
+      required_fields:
+        - lead_id
+        - customer_pseudonym_id
+        - lead_status
+        - last_interaction_at
+        - product_family
+
+    - name: Campaign Management
+      type: operational-system
+      purpose: "Campaign performance measurement and consent-aware campaign optimization."
+      access_pattern: "Aggregated analytical consumption"
+      required_fields:
+        - campaign_id
+        - channel
+        - lead_status
+        - consent_marketing_flag
+        - expected_value_amount
+
+    - name: Contact Center
+      type: business-team
+      purpose: "Consent-aware follow-up prioritization for qualified digital leads."
+      access_pattern: "CRM-integrated prioritized lead queue"
+      required_fields:
+        - lead_id
+        - product_family
+        - propensity_score
+        - consent_marketing_flag
+        - lead_status
+
+  data_dictionary:
+    table: digital_lead_conversion_profile
+    description: "Curated current-state table containing digital sales lead profile, consent posture, attribution, product interest, and conversion readiness."
+    columns:
+      - name: record_id
+        business_name: Record Identifier
+        type: string
+        required: true
+        classification: Internal
+        definition: "Technical unique identifier of the contract record."
+      - name: business_date
+        business_name: Business Date
+        type: date
+        required: true
+        classification: Internal
+        definition: "Date for which the lead profile snapshot is valid."
+      - name: region
+        business_name: Region
+        type: string
+        required: true
+        classification: Internal
+        definition: "Market where the lead belongs."
+      - name: lead_id
+        business_name: Lead Identifier
+        type: string
+        required: true
+        classification: Confidential
+        definition: "Pseudonymous identifier of a digital sales lead."
+      - name: customer_pseudonym_id
+        business_name: Customer Pseudonym Identifier
+        type: string
+        required: false
+        classification: Confidential
+        definition: "Pseudonymized customer identifier used only when the lead is matched to an existing customer."
+      - name: session_id
+        business_name: Session Identifier
+        type: string
+        required: true
+        classification: Confidential
+        definition: "Pseudonymous digital session identifier for attribution."
+      - name: channel
+        business_name: Digital Sales Channel
+        type: string
+        required: true
+        classification: Internal
+        definition: "Channel where the lead was created."
+      - name: product_family
+        business_name: Product Family
+        type: string
+        required: true
+        classification: Internal
+        definition: "Retail product family associated with the lead."
+      - name: campaign_id
+        business_name: Campaign Identifier
+        type: string
+        required: false
+        classification: Internal
+        definition: "Identifier of campaign that influenced the lead."
+      - name: lead_status
+        business_name: Lead Status
+        type: string
+        required: true
+        classification: Internal
+        definition: "Current lifecycle status of the lead."
+      - name: consent_marketing_flag
+        business_name: Marketing Consent Flag
+        type: boolean
+        required: true
+        classification: Confidential
+        definition: "Indicates whether marketing communication is allowed."
+      - name: consent_personalization_flag
+        business_name: Personalization Consent Flag
+        type: boolean
+        required: true
+        classification: Confidential
+        definition: "Indicates whether personalized offers can be used."
+      - name: propensity_score
+        business_name: Propensity Score
+        type: float
+        required: true
+        classification: Confidential
+        definition: "Estimated conversion likelihood from 0 to 1."
+      - name: expected_value_amount
+        business_name: Expected Value Amount
+        type: decimal
+        required: false
+        classification: Internal
+        definition: "Estimated commercial value of the lead."
+      - name: currency
+        business_name: Currency
+        type: string
+        required: false
+        classification: Internal
+        definition: "Currency of expected value."
+      - name: last_interaction_at
+        business_name: Last Interaction Timestamp
+        type: timestamp
+        required: true
+        classification: Confidential
+        definition: "Last known interaction timestamp in the lead journey."
+      - name: created_at
+        business_name: Created Timestamp
+        type: timestamp
+        required: true
+        classification: Internal
+        definition: "Record creation timestamp."
+      - name: updated_at
+        business_name: Updated Timestamp
+        type: timestamp
+        required: true
+        classification: Internal
+        definition: "Record update timestamp."
+      - name: data_source
+        business_name: Data Source
+        type: string
+        required: true
+        classification: Internal
+        definition: "Dominant source system used for profile assembly."
+
+  documentation:
+    summary: "Retail Sales Digital Lead Conversion Profile provides a governed daily view of digital sales leads, their conversion stage, consent status, product interest, attribution, and conversion likelihood."
+    business_context: "Team - Digi Prodej can use this product to understand digital funnel performance, prioritize sales follow-up, optimize campaigns, and coordinate with CRM and Contact Center teams."
+    refresh_cadence: "Daily D+1 batch refresh from digital, CRM, campaign, and offer-engine sources."
+    usage_guidelines:
+      - "Use only consent-compliant records for marketing activation."
+      - "Do not use propensity_score as the only criterion for legally significant customer decisions."
+      - "Do not expose lead_id, customer_pseudonym_id, or session_id outside approved operational and analytical consumers."
+      - "Use aggregated outputs for management reporting whenever individual lead-level data is not required."
+    access_controls:
+      - "Confidential fields require approved business purpose and role-based access."
+      - "Marketing consent fields must be respected by all downstream consumers."
+      - "Data export outside Horizon AI Bank environments requires Data Steward approval."
+    known_limitations:
+      - "Propensity score may be unavailable or less reliable for new campaigns with limited history."
+      - "Campaign attribution may be incomplete for partner channels."
+      - "Customer matching is pseudonymous and depends on source-system identity resolution quality."
+    operational_runbook:
+      data_quality_owner: "Juraj Cery - juraj.cery@horizon-ai-bank.cz"
+      incident_channel: "Data Governance intake channel"
+      expected_refresh_time: "07:00 CET"
+      escalation_rule: "If D+1 refresh fails or row_count falls below minimum threshold, notify Digi Prodej product owner and CRM data steward on the same business day."
+
